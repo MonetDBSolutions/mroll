@@ -1,0 +1,9 @@
+*.pyc
+*.pyo
+.venv
+*.egg-info
+.vscode/
+.coverage
+.tox
+.pytest_cache
+
