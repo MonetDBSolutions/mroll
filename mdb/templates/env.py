@@ -11,28 +11,30 @@ db_name = config['db']['db_name']
 user = config['db']['user']
 password = config['db']['password']
 port = config['db']['port']
+tbl_name = config['mdb']['rev_history_tbl_name']
 
 
-def create_head_tbl(db_name=db_name):
-    tbl_name = config['mdb']['rev_head_tbl_name']
-    conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
-    sql = "create table if not exists {}(head string)".format(tbl_name)
-    try:
-        conn.execute(sql)
-        conn.commit()
-        return True
-    except PyMonetdbErr as e:
-        conn.rollback()  
-        raise(e)
-    finally:
-        conn.close()
-    return False
+# def create_head_tbl(db_name=db_name):
+#     tbl_name = config['mdb']['rev_head_tbl_name']
+#     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
+#     sql = "create table if not exists {}(head string)".format(tbl_name)
+#     try:
+#         conn.execute(sql)
+#         conn.commit()
+#         return True
+#     except PyMonetdbErr as e:
+#         conn.rollback()  
+#         raise(e)
+#     finally:
+#         conn.close()
+#     return False
 
-def get_head():
+def get_head(db_name=db_name):
     head = None
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
+    tbl_name = config['mdb']['rev_history_tbl_name']
     try:
-        sql = "select head from mdb_rev_head limit 1"
+        sql = "select id, description, ts from {} as r where r.ts=(select max(ts) from {})".format(tbl_name, tbl_name)
         curr = conn.cursor()
         curr.execute(sql)
         head, = curr.fetchone() or (None,)
@@ -84,5 +86,32 @@ def add_revision(id_, description, ts):
         conn.close()
     return False
 
-def migrate():
-    pass
+def remove_revision(id_):
+    tbl_name = config['mdb']['rev_history_tbl_name']
+    conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
+    sql = "delete from {} where id={}".format(tbl_name, id_)
+    try:
+        conn.execute(sql)
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        raise(e)
+    finally:
+        conn.close()
+    return False
+
+def exec_sql(sql):
+    tbl_name = config['mdb']['rev_history_tbl_name']
+    conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
+    try:
+        conn.execute(sql)
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        raise(e)
+    finally:
+        conn.close()
+    return False
+

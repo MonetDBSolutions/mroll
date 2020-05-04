@@ -125,7 +125,7 @@ def setup(dir_, path):
 def init():
     env = get_env()
     try:
-        env.create_head_tbl() and print('head tbl created')
+        # env.create_head_tbl() and print('head tbl created')
         env.create_revisions_table() and print('rev tbl created')
         print('done')
     except Exception as e:
