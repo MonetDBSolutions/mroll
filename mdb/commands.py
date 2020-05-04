@@ -108,17 +108,15 @@ def setup(dir_, path):
     shutil.copy(os.path.join(tmpl_dir, 'mdb.ini'), directory)
     shutil.copy(os.path.join(tmpl_dir, 'env.py'), directory)
     #  setup config file
-    home = expanduser("~")
-    sys_config = os.path.join(home, '.config')
-    if not os.path.exists(sys_config):
-        os.mkdir(sys_config)
-    if not os.path.exists(os.path.join(sys_config, 'mdb')):
-        os.mkdir(os.path.join(sys_config, 'mdb'))
+    if not os.path.exists(SYS_CONFIG):
+        os.mkdir(SYS_CONFIG)
+    if not os.path.exists(MDB_CONFIG_DIR):
+        os.mkdir(MDB_CONFIG_DIR)
     config = configparser.ConfigParser()
     config['mdb'] = dict(work_dir=directory)
-    mdb_config = os.path.join(sys_config, 'mdb', 'config.ini')
-    with open(mdb_config, 'w') as configfile:
+    with open(MDB_CONFIG_FILE, 'w') as configfile:
         config.write(configfile)
+    assert os.path.exists(MDB_CONFIG_FILE)
     print('ok')
 
 @cli.command(name='init')
