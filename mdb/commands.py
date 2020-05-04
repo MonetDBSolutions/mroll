@@ -2,11 +2,19 @@
 
 import click
 import os
-
+import shutil
+import configparser
+from os.path import expanduser
 from datetime import datetime
 import importlib.util
 import importlib.machinery
 from functools import wraps
+
+HOME = expanduser("~")
+SYS_CONFIG = os.path.join(HOME, '.config')
+MDB_CONFIG_DIR = os.path.join(SYS_CONFIG, 'mdb')
+MDB_CONFIG_FILE = os.path.join(MDB_CONFIG_DIR, 'config.ini')
+
 
 def load_module_py(module_id, path):
     spec = importlib.util.spec_from_file_location(module_id, path)
@@ -19,7 +27,8 @@ def get_templates_dir():
     return os.path.join(dir_, 'templates')
 
 def get_env():
-    path = os.path.join(os.getcwd(), 'mdb', 'env.py')
+    config = Config.from_file(MDB_CONFIG_FILE)
+    path = os.path.join(config.work_dir, 'env.py')
     env = load_module_py('env', path)
     return env
 
@@ -27,6 +36,23 @@ def rev_id():
     import uuid
     return uuid.uuid4().hex[-12:]
 
+class Config:
+    work_dir = None
+
+    @classmethod
+    def from_file(cls, configfile):
+        if not os.path.exists(configfile):
+            raise RuntimeError('No config file found in \'{}\'. Run setup command first!'.format(MDB_CONFIG_DIR))
+        import configparser
+        config = configparser.ConfigParser()
+        config.read(configfile)
+        mdb_config_map = config['mdb']
+        conf = cls.__new__(cls)
+        for k in mdb_config_map:
+            setattr(conf, k, mdb_config_map[k])
+        return conf
+
+    
 class Revision:
     def __init__(self, id_, ts, description, upgrade=None, downgrade=None):
         self.id_ = id_
@@ -52,10 +78,10 @@ class MigrationContext:
         mc.revisions = revisions
         return mc
 
-class ScriptDirectory:
+class WorkDirectory:
     def __init__(self, path):
         if not os.path.exists(path) and not os.listdir(path):
-            raise RuntimeError('Script directory not initilezed. Run setup command first')
+            raise RuntimeError('Script directory not initilezed. Run setup command first!')
         self.path=path
 
     def load_revissions(self):
@@ -69,17 +95,30 @@ def cli():
     pass
 
 @cli.command(name='setup')
-def setup():
-    directory = os.path.join(os.getcwd(), 'mdb')
+@click.option('-d', '--dir', 'dir_', default='migrations', help='name of the work directory')
+@click.option('-p', '--path', help='path to work directory')
+def setup(dir_, path):
+    directory = path or os.path.join(os.getcwd(), dir_)
     if os.access(directory, os.F_OK) and os.listdir(directory):
         raise ValueError("Directory %s already exists and is not empty" % directory)
     versions = os.path.join(directory, 'versions')
     os.mkdir(directory)
     os.mkdir(versions)
     tmpl_dir = get_templates_dir()
-    import shutil
     shutil.copy(os.path.join(tmpl_dir, 'mdb.ini'), directory)
     shutil.copy(os.path.join(tmpl_dir, 'env.py'), directory)
+    #  setup config file
+    home = expanduser("~")
+    sys_config = os.path.join(home, '.config')
+    if not os.path.exists(sys_config):
+        os.mkdir(sys_config)
+    if not os.path.exists(os.path.join(sys_config, 'mdb')):
+        os.mkdir(os.path.join(sys_config, 'mdb'))
+    config = configparser.ConfigParser()
+    config['mdb'] = dict(work_dir=directory)
+    mdb_config = os.path.join(sys_config, 'mdb', 'config.ini')
+    with open(mdb_config, 'w') as configfile:
+        config.write(configfile)
     print('ok')
 
 @cli.command(name='init')
@@ -98,7 +137,8 @@ def revision(message):
     """
     Creates new revision file from a template.
     """
-    sd = ScriptDirectory(os.path.join(os.getcwd(), 'mdb'))
+    config = Config.from_file(MDB_CONFIG_FILE)
+    wd = WorkDirectory(config.work_dir)
     ts = datetime.now().isoformat()
     id_ = rev_id()
     description = message or ''
@@ -106,12 +146,13 @@ def revision(message):
     with open(file_, 'r') as f:
         template = f.read()
         kebab = description.strip().replace(' ', '_')
-        fn = os.path.join(sd.path, 'versions', '{}_{}.sql'.format(id_, kebab))
+        fn = os.path.join(wd.path, 'versions', '{}_{}.sql'.format(id_, kebab))
         with open(fn, 'w+') as fw:
             header = "-- {}\n-- {}\n-- {}\n".format(id_, description, ts)
             fw.write(header)
             fw.write(template)
-    return print('ok')
+        assert os.path.exists(fn)
+    print('ok')
 
 @cli.command(name='history')
 def history():
