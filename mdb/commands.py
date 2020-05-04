@@ -54,12 +54,15 @@ class Config:
 
     
 class Revision:
-    def __init__(self, id_, ts, description, upgrade=None, downgrade=None):
-        self.id_ = id_
-        self.ts = ts
+    def __init__(self, id_, description, ts, upgrade_sql=None, downgrade_sql=None):
+        self.id = id_
         self.description = description
-        self.upgrade = upgrade
-        self.downgrade = downgrade
+        self.ts = ts
+        self.upgrade_sql = upgrade_sql
+        self.downgrade_sql = downgrade_sql
+
+    def __repr__(self):
+        return "<Revision id={} description={}>".format(self.id, self.description)
 
 class MigrationContext:
     def __init__(self, head=None, revisions=[]):
@@ -78,21 +81,70 @@ class MigrationContext:
         mc.revisions = revisions
         return mc
 
+def parse_rev_file(rev_file) -> Revision:
+    """
+    Parse revision file with following format:
+    -- identifiers used by mdb
+    -- id=<revision_id>
+    -- description=<revision description>
+    -- ts=<time stamp>
+    -- migration:upgrade
+        <sql text>
+
+    -- migration:downgrade
+        <sql text>
+    """
+    with open(rev_file, 'rt') as file_:
+        for l in file_:
+            if 'id=' in l:
+                id_ = l.split('id=').pop().strip()
+                continue
+            if 'description=' in l:
+                description = l.split('description=').pop().strip()
+                continue
+            if 'ts=' in l:
+                ts = l.split('ts=').pop().strip()
+                continue
+            if 'migration:upgrade' in l:
+                break
+        upgrade_sql = ''
+        for l in file_:
+            if 'migration:downgrade' in l:
+                break
+            upgrade_sql+=l
+        downgrade_sql = ''
+        for l in file_:
+            downgrade_sql+=l
+        assert id_
+        assert description
+        assert ts
+        return Revision(id_, description, ts, upgrade_sql=upgrade_sql, downgrade_sql=downgrade_sql)
+
+
+
 class WorkDirectory:
     def __init__(self, path):
         if not os.path.exists(path) and not os.listdir(path):
             raise RuntimeError('Script directory not initilezed. Run setup command first!')
-        self.path=path
+        self.path = path
+        self.revisions = self.load_revisions(path)
 
-    def load_revissions(self):
-        pass
+    def load_revisions(self, path):
+        vers_dir = os.path.join(path or self.path, 'versions')
+        res = []
+        for f in os.listdir(vers_dir):
+            if f.endswith('.sql'):
+                res.append(parse_rev_file(os.path.join(vers_dir, f)))
+        res.sort(key=lambda rev: datetime.fromisoformat(rev.ts))
+        return res
 
 
 # ----------------------------------
 
-@click.group()
-def cli():
-    pass
+@click.group(chain=True)
+@click.pass_context
+def cli(ctx):
+    ctx.ensure_object(dict)
 
 @cli.command(name='setup')
 @click.option('-d', '--dir', 'dir_', default='migrations', help='name of the work directory')
@@ -146,7 +198,8 @@ def revision(message):
         kebab = description.strip().replace(' ', '_')
         fn = os.path.join(wd.path, 'versions', '{}_{}.sql'.format(id_, kebab))
         with open(fn, 'w+') as fw:
-            header = "-- {}\n-- {}\n-- {}\n".format(id_, description, ts)
+            fw.write('-- identifiers used by mdb\n')
+            header = "-- id={}\n-- description={}\n-- ts={}\n".format(id_, description, ts)
             fw.write(header)
             fw.write(template)
         assert os.path.exists(fn)
@@ -158,6 +211,22 @@ def history():
     for r in migr_ctx.revisions:
         print('id={} desc={} ts={}'.format(r.id, r.description, r.ts))
 
+@cli.command(name="show")
+@click.pass_context
+def show(ctx):
+    ctx.obj['show_cmd'] = True
+    
+@cli.command(name="all_revisions")
+def all_revisions():
+    config = Config.from_file(MDB_CONFIG_FILE)
+    wd = WorkDirectory(config.work_dir)
+    for rev in wd.revisions:
+        print(rev)
+
+@cli.command(name='new_revisions')
+def new_revisions():
+    # TODO
+    print('TODO: showing new revisions')
 
 if __name__ == '__main__':
     cli()
