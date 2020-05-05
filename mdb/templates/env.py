@@ -77,7 +77,8 @@ def add_revision(id_, description, ts, upgrade_sql):
     """
     tbl_name = config['mdb']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
-    sql = "insert into {} values ({}, {}, {})".format(tbl_name, id_, description, ts)
+    sql = "insert into {} values ('{}', '{}', '{}')".format(tbl_name, id_, description, ts)
+    print('sql --> ', sql)
     try:
         conn.execute(upgrade_sql)
         conn.execute(sql)
@@ -93,7 +94,7 @@ def add_revision(id_, description, ts, upgrade_sql):
 def remove_revision(id_):
     tbl_name = config['mdb']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
-    sql = "delete from {} where id={}".format(tbl_name, id_)
+    sql = "delete from {} where id='{}'".format(tbl_name, id_)
     try:
         conn.execute(sql)
         conn.commit()

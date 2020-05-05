@@ -107,8 +107,8 @@ class Revision:
             setattr(rev, 'id', id_)
             setattr(rev, 'description', description)
             setattr(rev, 'ts', ts)
-            setattr(rev, 'upgrade_sql', upgrade_sql)
-            setattr(rev, 'downgrade_sql', downgrade_sql)
+            setattr(rev, 'upgrade_sql', upgrade_sql.strip())
+            setattr(rev, 'downgrade_sql', downgrade_sql.strip())
             return rev
 
 
@@ -124,7 +124,7 @@ class MigrationContext:
     def from_env(cls, env):
         head = env.get_head()
         if head is not None:
-            id_, descrption, ts = head
+            id_, description, ts = head
             head = Revision(id_, description, ts)
         revisions = [Revision(id_, description, ts) for id_, description, ts in env.get_revisions()]
         mc = cls.__new__(cls)
@@ -221,7 +221,7 @@ def revision(message):
 def history():
     migr_ctx = MigrationContext.from_env(get_env())
     for r in migr_ctx.revisions:
-        print('id={} desc={} ts={}'.format(r.id, r.description, r.ts))
+        print(r)
 
 @cli.command(name="show")
 @click.pass_context
@@ -255,18 +255,20 @@ def upgrade():
     working_set = wd.revisions
     if migr_ctx.head is not None:
         print('adjusting working set ...')
-        # TODO adjust working set
-        return
+        def filter_fn(rev):
+            return datetime.fromisoformat(rev.ts) > migr_ctx.head.ts
+        working_set = list(filter(filter_fn, working_set))
     for rev in working_set:
         try:
-            env.add_revision(rev.id, rv.description, rev.ts, rev.upgrade_sql)
-        except:
+            env.add_revision(rev.id, rev.description, rev.ts, rev.upgrade_sql)
+        except Exception as e:
+            print(e)
             print('Upgrade failed at revision id={} description={}'.format(rev.id, rev.description))
             break
     print('Done')
 
 @cli.command(name="downgrade")
-@click.command('-r', '--rev', help="revision id")
+@click.option('-r', '--rev', help="revision id")
 def downgrade():
     """
     Without specified rev id goes one at the time?
