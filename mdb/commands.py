@@ -36,6 +36,7 @@ def rev_id():
     import uuid
     return uuid.uuid4().hex[-12:]
 
+
 class Config:
     work_dir = None
 
@@ -64,6 +65,53 @@ class Revision:
     def __repr__(self):
         return "<Revision id={} description={}>".format(self.id, self.description)
 
+    @classmethod
+    def from_file(cls, rev_file):
+        """
+        Parse revision file with following format:
+        -- identifiers used by mdb
+        -- id=<revision_id>
+        -- description=<revision description>
+        -- ts=<time stamp>
+        -- migration:upgrade
+            <sql text>
+
+        -- migration:downgrade
+            <sql text>
+        """
+        with open(rev_file, 'rt') as file_:
+            for l in file_:
+                if 'id=' in l:
+                    id_ = l.split('id=').pop().strip()
+                    continue
+                if 'description=' in l:
+                    description = l.split('description=').pop().strip()
+                    continue
+                if 'ts=' in l:
+                    ts = l.split('ts=').pop().strip()
+                    continue
+                if 'migration:upgrade' in l:
+                    break
+            upgrade_sql = ''
+            for l in file_:
+                if 'migration:downgrade' in l:
+                    break
+                upgrade_sql+=l
+            downgrade_sql = ''
+            for l in file_:
+                downgrade_sql+=l
+            assert id_
+            assert description
+            assert ts
+            rev = cls.__new__(cls)
+            setattr(rev, 'id', id_)
+            setattr(rev, 'description', description)
+            setattr(rev, 'ts', ts)
+            setattr(rev, 'upgrade_sql', upgrade_sql)
+            setattr(rev, 'downgrade_sql', downgrade_sql)
+            return rev
+
+
 class MigrationContext:
     def __init__(self, head=None, revisions=[]):
         self.head = head
@@ -75,51 +123,14 @@ class MigrationContext:
     @classmethod
     def from_env(cls, env):
         head = env.get_head()
+        if head is not None:
+            id_, descrption, ts = head
+            head = Revision(id_, description, ts)
         revisions = [Revision(id_, description, ts) for id_, description, ts in env.get_revisions()]
         mc = cls.__new__(cls)
         mc.head = head
         mc.revisions = revisions
         return mc
-
-def parse_rev_file(rev_file) -> Revision:
-    """
-    Parse revision file with following format:
-    -- identifiers used by mdb
-    -- id=<revision_id>
-    -- description=<revision description>
-    -- ts=<time stamp>
-    -- migration:upgrade
-        <sql text>
-
-    -- migration:downgrade
-        <sql text>
-    """
-    with open(rev_file, 'rt') as file_:
-        for l in file_:
-            if 'id=' in l:
-                id_ = l.split('id=').pop().strip()
-                continue
-            if 'description=' in l:
-                description = l.split('description=').pop().strip()
-                continue
-            if 'ts=' in l:
-                ts = l.split('ts=').pop().strip()
-                continue
-            if 'migration:upgrade' in l:
-                break
-        upgrade_sql = ''
-        for l in file_:
-            if 'migration:downgrade' in l:
-                break
-            upgrade_sql+=l
-        downgrade_sql = ''
-        for l in file_:
-            downgrade_sql+=l
-        assert id_
-        assert description
-        assert ts
-        return Revision(id_, description, ts, upgrade_sql=upgrade_sql, downgrade_sql=downgrade_sql)
-
 
 
 class WorkDirectory:
@@ -134,7 +145,8 @@ class WorkDirectory:
         res = []
         for f in os.listdir(vers_dir):
             if f.endswith('.sql'):
-                res.append(parse_rev_file(os.path.join(vers_dir, f)))
+                rev_file = os.path.join(vers_dir, f)
+                res.append(Revision.from_file(rev_file))
         res.sort(key=lambda rev: datetime.fromisoformat(rev.ts))
         return res
 
@@ -225,8 +237,42 @@ def all_revisions():
 
 @cli.command(name='new_revisions')
 def new_revisions():
+    """
+    Shows revisions not applied yet
+    """
     # TODO
     print('TODO: showing new revisions')
+
+@cli.command(name="upgrade")
+def upgrade():
+    """
+    Applies all revisions not yet applied in work dir.
+    """
+    config = Config.from_file(MDB_CONFIG_FILE)
+    wd = WorkDirectory(config.work_dir)
+    env = get_env()
+    migr_ctx = MigrationContext.from_env(env)
+    working_set = wd.revisions
+    if migr_ctx.head is not None:
+        print('adjusting working set ...')
+        # TODO adjust working set
+        return
+    for rev in working_set:
+        try:
+            env.add_revision(rev.id, rv.description, rev.ts, rev.upgrade_sql)
+        except:
+            print('Upgrade failed at revision id={} description={}'.format(rev.id, rev.description))
+            break
+    print('Done')
+
+@cli.command(name="downgrade")
+@click.command('-r', '--rev', help="revision id")
+def downgrade():
+    """
+    Without specified rev id goes one at the time?
+    """
+    # TODO
+    pass
 
 if __name__ == '__main__':
     cli()

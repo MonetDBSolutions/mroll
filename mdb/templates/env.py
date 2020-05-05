@@ -30,17 +30,17 @@ tbl_name = config['mdb']['rev_history_tbl_name']
 #     return False
 
 def get_head(db_name=db_name):
-    head = None
+    rev = None
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     tbl_name = config['mdb']['rev_history_tbl_name']
     try:
         sql = "select id, description, ts from {} as r where r.ts=(select max(ts) from {})".format(tbl_name, tbl_name)
         curr = conn.cursor()
         curr.execute(sql)
-        head, = curr.fetchone() or (None,)
+        rev = curr.fetchone()
     finally:
         conn.close()
-    return head
+    return rev
 
 def create_revisions_table(db_name=db_name):
     tbl_name = config['mdb']['rev_history_tbl_name']
@@ -71,11 +71,15 @@ def get_revisions():
     finally:
         conn.close()
 
-def add_revision(id_, description, ts):
+def add_revision(id_, description, ts, upgrade_sql):
+    """
+    Applies the upgrade sql and adds it to meta data in one transaction
+    """
     tbl_name = config['mdb']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = "insert into {} values ({}, {}, {})".format(tbl_name, id_, description, ts)
     try:
+        conn.execute(upgrade_sql)
         conn.execute(sql)
         conn.commit()
         return True
