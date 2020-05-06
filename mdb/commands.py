@@ -153,7 +153,29 @@ class WorkDirectory:
         if not os.path.exists(path) and not os.listdir(path):
             raise RuntimeError('Script directory not initilezed. Run setup command first!')
         self.path = path
-        self.revisions = self.load_revisions(path)
+        # self.revisions = self.load_revisions(path)
+
+    @property
+    def config(self):
+        configfile = os.path.join(self.path, 'mdb.ini')
+        config = configparser.ConfigParser()
+        config.read(configfile)
+        return config
+
+    def _set_config(self, section, key, value):
+        """
+        Alter work dir config file (mdb.ini). Used in setting up test scenarios.
+        Otherwise end user should directly edit the file.
+        """
+        configfile = os.path.join(self.path, 'mdb.ini')
+        config = self.config
+        config[section][key] = value
+        with open(configfile, 'w') as f:
+            config.write(f)
+
+    @property
+    def revisions(self):
+        return self.load_revisions(self.path)
 
     def load_revisions(self, path):
         vers_dir = os.path.join(path or self.path, 'versions')
@@ -204,9 +226,10 @@ def init():
     try:
         # env.create_head_tbl() and print('head tbl created')
         env.create_revisions_table() and print('rev tbl created')
-        print('done')
     except Exception as e:
         print(e)
+        SystemExit('init failed')
+    print('Done')
     
 @cli.command(name='revision')
 @click.option('-m', '--message', help='gets added to revision name')
