@@ -14,22 +14,7 @@ port = config['db']['port']
 tbl_name = config['mdb']['rev_history_tbl_name']
 
 
-# def create_head_tbl(db_name=db_name):
-#     tbl_name = config['mdb']['rev_head_tbl_name']
-#     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
-#     sql = "create table if not exists {}(head string)".format(tbl_name)
-#     try:
-#         conn.execute(sql)
-#         conn.commit()
-#         return True
-#     except PyMonetdbErr as e:
-#         conn.rollback()  
-#         raise(e)
-#     finally:
-#         conn.close()
-#     return False
-
-def get_head(db_name=db_name):
+def get_head(db_name=db_name, tbl_name=tbl_name):
     rev = None
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     tbl_name = config['mdb']['rev_history_tbl_name']
@@ -42,7 +27,7 @@ def get_head(db_name=db_name):
         conn.close()
     return rev
 
-def create_revisions_table(db_name=db_name):
+def create_revisions_table(db_name=db_name, tbl_name=tbl_name):
     tbl_name = config['mdb']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = """
@@ -60,7 +45,7 @@ def create_revisions_table(db_name=db_name):
         conn.close()
     return False
 
-def get_revisions():
+def get_revisions(db_name=db_name, tbl_name=tbl_name):
     tbl_name = config['mdb']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = "select id, description, ts from {} order by ts".format(tbl_name)
@@ -71,7 +56,7 @@ def get_revisions():
     finally:
         conn.close()
 
-def add_revision(id_, description, ts, upgrade_sql):
+def add_revision(id_, description, ts, upgrade_sql, db_name=db_name, tbl_name=tbl_name):
     """
     Applies the upgrade sql and adds it to meta data in one transaction
     """
@@ -91,11 +76,12 @@ def add_revision(id_, description, ts, upgrade_sql):
         conn.close()
     return False
 
-def remove_revision(id_):
+def remove_revision(id_, downgrade_sql, db_name=db_name, tbl_name=tbl_name):
     tbl_name = config['mdb']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = "delete from {} where id='{}'".format(tbl_name, id_)
     try:
+        conn.execute(downgrade_sql)
         conn.execute(sql)
         conn.commit()
         return True
@@ -105,18 +91,3 @@ def remove_revision(id_):
     finally:
         conn.close()
     return False
-
-def exec_sql(sql):
-    tbl_name = config['mdb']['rev_history_tbl_name']
-    conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
-    try:
-        conn.execute(sql)
-        conn.commit()
-        return True
-    except Exception as e:
-        conn.rollback()
-        raise(e)
-    finally:
-        conn.close()
-    return False
-

@@ -65,6 +65,21 @@ class Revision:
     def __repr__(self):
         return "<Revision id={} description={}>".format(self.id, self.description)
 
+    def serialize(self):
+        from io import StringIO
+        res=''
+        with StringIO() as buf:
+            buf.write('-- identifiers used by mdb\n')
+            buf.write('-- id={}\n'.format(self.id))
+            ts = self.ts.isoformat() if type(self.ts) == datetime else self.ts
+            buf.write('-- ts={}\n'.format(ts))
+            buf.write('-- migration:upgrade\n')
+            buf.write('{}\n'.format(self.upgrade_sql))
+            buf.write('-- migration:downgrade\n')
+            buf.write('{}\n'.format(self.downgrade_sql))
+            res = buf.getvalue()
+        return res
+
     @classmethod
     def from_file(cls, rev_file):
         """
@@ -263,18 +278,44 @@ def upgrade():
             env.add_revision(rev.id, rev.description, rev.ts, rev.upgrade_sql)
         except Exception as e:
             print(e)
-            print('Upgrade failed at revision id={} description={}'.format(rev.id, rev.description))
-            break
+            raise SystemExit('Upgrade failed at revision id={} description={}'.format(rev.id, rev.description))
     print('Done')
 
 @cli.command(name="downgrade")
-@click.option('-r', '--rev', help="revision id")
-def downgrade():
+@click.option('-r', '--rev', 'rev_id', help="revision id")
+def downgrade(rev_id):
     """
-    Without specified rev id goes one at the time?
+    Downgrades to the previous revison or to the revision with the id specified.
     """
     # TODO
-    pass
+    print(rev_id)
+
+@cli.command(name='rollback')
+def rollback():
+    """
+    Downgrades to the previous revision. It has same effect as downgrade without specified
+    revision id. 
+    """
+    config = Config.from_file(MDB_CONFIG_FILE)
+    wd = WorkDirectory(config.work_dir)
+    env = get_env()
+    migr_ctx = MigrationContext.from_env(env)
+    if migr_ctx.head is None:
+        print("Nothing to do!")
+        return
+    print('Rolling back id={} description={} ...'.format(migr_ctx.head.id, migr_ctx.head.description)) 
+    downgrade_sql = ''
+    for rev in wd.revisions:
+        if rev.id == migr_ctx.head.id:
+            downgrade_sql = rev.downgrade_sql
+            break
+    try:
+        env.remove_revision(migr_ctx.head.id, downgrade_sql)
+    except Exception as e:
+        print(e)
+        raise SystemExit('Rollback failed!')
+    print('Done')
+
 
 if __name__ == '__main__':
     cli()
