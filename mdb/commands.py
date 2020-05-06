@@ -199,6 +199,9 @@ def cli(ctx):
 @click.option('-d', '--dir', 'dir_', default='migrations', help='name of the work directory')
 @click.option('-p', '--path', help='path to work directory')
 def setup(dir_, path):
+    """
+    Set up work directory. Should be run once.
+    """
     directory = path or os.path.join(os.getcwd(), dir_)
     if os.access(directory, os.F_OK) and os.listdir(directory):
         raise ValueError("Directory %s already exists and is not empty" % directory)
@@ -222,9 +225,11 @@ def setup(dir_, path):
 
 @cli.command(name='init')
 def init():
+    """
+    Creates mdb_revisions tbl. Shuld be run once.
+    """
     env = get_env()
     try:
-        # env.create_head_tbl() and print('head tbl created')
         env.create_revisions_table() and print('rev tbl created')
     except Exception as e:
         print(e)
@@ -257,6 +262,9 @@ def revision(message):
 
 @cli.command(name='history')
 def history():
+    """
+    Shows applied revisions.
+    """
     migr_ctx = MigrationContext.from_env(get_env())
     for r in migr_ctx.revisions:
         print(r)
