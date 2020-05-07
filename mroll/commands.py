@@ -12,7 +12,7 @@ from functools import wraps
 
 HOME = expanduser("~")
 SYS_CONFIG = os.path.join(HOME, '.config')
-MDB_CONFIG_DIR = os.path.join(SYS_CONFIG, 'mdb')
+MDB_CONFIG_DIR = os.path.join(SYS_CONFIG, 'mroll')
 MDB_CONFIG_FILE = os.path.join(MDB_CONFIG_DIR, 'config.ini')
 
 
@@ -47,7 +47,7 @@ class Config:
         import configparser
         config = configparser.ConfigParser()
         config.read(configfile)
-        mdb_config_map = config['mdb']
+        mdb_config_map = config['mroll']
         conf = cls.__new__(cls)
         for k in mdb_config_map:
             setattr(conf, k, mdb_config_map[k])
@@ -69,7 +69,7 @@ class Revision:
         from io import StringIO
         res=''
         with StringIO() as buf:
-            buf.write('-- identifiers used by mdb\n')
+            buf.write('-- identifiers used by mroll\n')
             buf.write('-- id={}\n'.format(self.id))
             ts = self.ts.isoformat() if type(self.ts) == datetime else self.ts
             buf.write('-- ts={}\n'.format(ts))
@@ -84,7 +84,7 @@ class Revision:
     def from_file(cls, rev_file):
         """
         Parse revision file with following format:
-        -- identifiers used by mdb
+        -- identifiers used by mroll
         -- id=<revision_id>
         -- description=<revision description>
         -- ts=<time stamp>
@@ -157,17 +157,17 @@ class WorkDirectory:
 
     @property
     def config(self):
-        configfile = os.path.join(self.path, 'mdb.ini')
+        configfile = os.path.join(self.path, 'mroll.ini')
         config = configparser.ConfigParser()
         config.read(configfile)
         return config
 
     def _set_config(self, section, key, value):
         """
-        Alter work dir config file (mdb.ini). Used in setting up test scenarios.
+        Alter work dir config file (mroll.ini). Used in setting up test scenarios.
         Otherwise end user should directly edit the file.
         """
-        configfile = os.path.join(self.path, 'mdb.ini')
+        configfile = os.path.join(self.path, 'mroll.ini')
         config = self.config
         config[section][key] = value
         with open(configfile, 'w') as f:
@@ -209,7 +209,7 @@ def setup(dir_, path):
     os.mkdir(directory)
     os.mkdir(versions)
     tmpl_dir = get_templates_dir()
-    shutil.copy(os.path.join(tmpl_dir, 'mdb.ini'), directory)
+    shutil.copy(os.path.join(tmpl_dir, 'mroll.ini'), directory)
     shutil.copy(os.path.join(tmpl_dir, 'env.py'), directory)
     #  setup config file
     if not os.path.exists(SYS_CONFIG):
@@ -217,7 +217,7 @@ def setup(dir_, path):
     if not os.path.exists(MDB_CONFIG_DIR):
         os.mkdir(MDB_CONFIG_DIR)
     config = configparser.ConfigParser()
-    config['mdb'] = dict(work_dir=directory)
+    config['mroll'] = dict(work_dir=directory)
     with open(MDB_CONFIG_FILE, 'w') as configfile:
         config.write(configfile)
     assert os.path.exists(MDB_CONFIG_FILE)
@@ -253,7 +253,7 @@ def revision(message):
         kebab = description.strip().replace(' ', '_')
         fn = os.path.join(wd.path, 'versions', '{}_{}.sql'.format(id_, kebab))
         with open(fn, 'w+') as fw:
-            fw.write('-- identifiers used by mdb\n')
+            fw.write('-- identifiers used by mroll\n')
             header = "-- id={}\n-- description={}\n-- ts={}\n".format(id_, description, ts)
             fw.write(header)
             fw.write(template)

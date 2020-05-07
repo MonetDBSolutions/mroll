@@ -6,8 +6,8 @@ import shutil
 from click.testing import CliRunner
 import pymonetdb
 
-from mdb import __version__
-from mdb.commands import *
+from mroll import __version__
+from mroll.commands import *
 
 def test_version():
     assert __version__ == '0.1.0'

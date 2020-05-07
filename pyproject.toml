@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "mdb"
+name = "mroll"
 version = "0.1.0"
 description = "monetdb migration tool"
 authors = ["svetlin <svetlin.stalinov@monetdbsolutions.com>"]

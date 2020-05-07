@@ -5,19 +5,19 @@ import os
 
 config = configparser.ConfigParser()
 dir_ = os.path.dirname(__file__)
-configuration = os.path.join(dir_, 'mdb.ini')
+configuration = os.path.join(dir_, 'mroll.ini')
 config.read(configuration)
 db_name = config['db']['db_name']
 user = config['db']['user']
 password = config['db']['password']
 port = config['db']['port']
-tbl_name = config['mdb']['rev_history_tbl_name']
+tbl_name = config['mroll']['rev_history_tbl_name']
 
 
 def get_head(db_name=db_name, tbl_name=tbl_name):
     rev = None
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
-    tbl_name = config['mdb']['rev_history_tbl_name']
+    tbl_name = config['mroll']['rev_history_tbl_name']
     try:
         sql = "select id, description, ts from {} as r where r.ts=(select max(ts) from {})".format(tbl_name, tbl_name)
         curr = conn.cursor()
@@ -28,7 +28,7 @@ def get_head(db_name=db_name, tbl_name=tbl_name):
     return rev
 
 def create_revisions_table(db_name=db_name, tbl_name=tbl_name):
-    tbl_name = config['mdb']['rev_history_tbl_name']
+    tbl_name = config['mroll']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = """
     create table if not exists {}(id string, description string, ts timestamp);
@@ -46,7 +46,7 @@ def create_revisions_table(db_name=db_name, tbl_name=tbl_name):
     return False
 
 def get_revisions(db_name=db_name, tbl_name=tbl_name):
-    tbl_name = config['mdb']['rev_history_tbl_name']
+    tbl_name = config['mroll']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = "select id, description, ts from {} order by ts".format(tbl_name)
     cur = conn.cursor()
@@ -60,7 +60,7 @@ def add_revision(id_, description, ts, upgrade_sql, db_name=db_name, tbl_name=tb
     """
     Applies the upgrade sql and adds it to meta data in one transaction
     """
-    tbl_name = config['mdb']['rev_history_tbl_name']
+    tbl_name = config['mroll']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = "insert into {} values ('{}', '{}', '{}')".format(tbl_name, id_, description, ts)
     print('sql --> ', sql)
@@ -77,7 +77,7 @@ def add_revision(id_, description, ts, upgrade_sql, db_name=db_name, tbl_name=tb
     return False
 
 def remove_revision(id_, downgrade_sql, db_name=db_name, tbl_name=tbl_name):
-    tbl_name = config['mdb']['rev_history_tbl_name']
+    tbl_name = config['mroll']['rev_history_tbl_name']
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = "delete from {} where id='{}'".format(tbl_name, id_)
     try:

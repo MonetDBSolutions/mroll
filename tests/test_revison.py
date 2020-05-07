@@ -1,12 +1,12 @@
 import os
 import unittest
-from mdb.commands import Revision
+from mroll.commands import Revision
 
 class TestRevision(unittest.TestCase):
 
     def test_rev_from_file(self):
         content="""
-        -- identifiers used by mdb
+        -- identifiers used by mroll
         -- id=099c9a23ab3b
         -- description=add column
         -- ts=2020-05-04T23:14:37.498799
@@ -28,7 +28,7 @@ class TestRevision(unittest.TestCase):
 
     def test_serialize(self):
         content="""
-        -- identifiers used by mdb
+        -- identifiers used by mroll
         -- id=099c9a23ab3b
         -- description=add column
         -- ts=2020-05-04T23:14:37.498799
