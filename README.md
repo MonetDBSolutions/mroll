@@ -1,4 +1,4 @@
-# MDB migration tool
+# Mroll migration tool
 Initial draft for db migration tool to be used with monetdb and pymonetdb.
 
 # Usage
@@ -15,7 +15,7 @@ Commands:
   all_revisions
   downgrade      Downgrades to the previous revison or to the revision with...
   history        Shows applied revisions.
-  init           Creates mdb_revisions tbl.
+  init           Creates mroll_revisions tbl.
   new_revisions  Shows revisions not applied yet
   revision       Creates new revision file from a template.
   rollback       Downgrades to the previous revision.
