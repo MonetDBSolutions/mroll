@@ -6,4 +6,4 @@
 .coverage
 .tox
 .pytest_cache
-
+dist

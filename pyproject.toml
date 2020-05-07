@@ -2,7 +2,12 @@
 name = "mroll"
 version = "0.1.0"
 description = "monetdb migration tool"
+license = "MPL-2.0"
+readme = "README.md"
 authors = ["svetlin <svetlin.stalinov@monetdbsolutions.com>"]
+repository = "https://github.com/MonetDBSolutions/mroll"
+
+keywords = ["migration", "monetdb", "mroll"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
