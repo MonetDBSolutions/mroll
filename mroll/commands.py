@@ -12,8 +12,8 @@ from functools import wraps
 
 HOME = expanduser("~")
 SYS_CONFIG = os.path.join(HOME, '.config')
-MDB_CONFIG_DIR = os.path.join(SYS_CONFIG, 'mroll')
-MDB_CONFIG_FILE = os.path.join(MDB_CONFIG_DIR, 'config.ini')
+MROLL_CONFIG_DIR = os.path.join(SYS_CONFIG, 'mroll')
+MROLL_CONFIG_FILE = os.path.join(MROLL_CONFIG_DIR, 'config.ini')
 
 
 def load_module_py(module_id, path):
@@ -27,7 +27,7 @@ def get_templates_dir():
     return os.path.join(dir_, 'templates')
 
 def get_env():
-    config = Config.from_file(MDB_CONFIG_FILE)
+    config = Config.from_file(MROLL_CONFIG_FILE)
     path = os.path.join(config.work_dir, 'env.py')
     env = load_module_py('env', path)
     return env
@@ -43,14 +43,14 @@ class Config:
     @classmethod
     def from_file(cls, configfile):
         if not os.path.exists(configfile):
-            raise RuntimeError('No config file found in \'{}\'. Run setup command first!'.format(MDB_CONFIG_DIR))
+            raise RuntimeError('No config file found in \'{}\'. Run setup command first!'.format(MROLL_CONFIG_DIR))
         import configparser
         config = configparser.ConfigParser()
         config.read(configfile)
-        mdb_config_map = config['mroll']
+        mroll_confi_map = config['mroll']
         conf = cls.__new__(cls)
-        for k in mdb_config_map:
-            setattr(conf, k, mdb_config_map[k])
+        for k in mroll_confi_map:
+            setattr(conf, k, mroll_confi_map[k])
         return conf
 
     
@@ -214,23 +214,23 @@ def setup(dir_, path):
     #  setup config file
     if not os.path.exists(SYS_CONFIG):
         os.mkdir(SYS_CONFIG)
-    if not os.path.exists(MDB_CONFIG_DIR):
-        os.mkdir(MDB_CONFIG_DIR)
+    if not os.path.exists(MROLL_CONFIG_DIR):
+        os.mkdir(MROLL_CONFIG_DIR)
     config = configparser.ConfigParser()
     config['mroll'] = dict(work_dir=directory)
-    with open(MDB_CONFIG_FILE, 'w') as configfile:
+    with open(MROLL_CONFIG_FILE, 'w') as configfile:
         config.write(configfile)
-    assert os.path.exists(MDB_CONFIG_FILE)
+    assert os.path.exists(MROLL_CONFIG_FILE)
     print('ok')
 
 @cli.command(name='init')
 def init():
     """
-    Creates mdb_revisions tbl. Shuld be run once.
+    Creates mroll_revisions tbl. Shuld be run once.
     """
     env = get_env()
     try:
-        env.create_revisions_table() and print('rev tbl created')
+        env.create_revisions_table() and print('{} created'.format(env.tbl_name))
     except Exception as e:
         print(e)
         raise SystemExit('init failed')
@@ -242,7 +242,7 @@ def revision(message):
     """
     Creates new revision file from a template.
     """
-    config = Config.from_file(MDB_CONFIG_FILE)
+    config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     ts = datetime.now().isoformat()
     id_ = rev_id()
@@ -276,7 +276,7 @@ def show(ctx):
     
 @cli.command(name="all_revisions")
 def all_revisions():
-    config = Config.from_file(MDB_CONFIG_FILE)
+    config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     for rev in wd.revisions:
         print(rev)
@@ -286,7 +286,7 @@ def new_revisions():
     """
     Shows revisions not applied yet
     """
-    config = Config.from_file(MDB_CONFIG_FILE)
+    config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     env = get_env()
     migr_ctx = MigrationContext.from_env(env)
@@ -303,7 +303,7 @@ def upgrade():
     """
     Applies all revisions not yet applied in work dir.
     """
-    config = Config.from_file(MDB_CONFIG_FILE)
+    config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     env = get_env()
     migr_ctx = MigrationContext.from_env(env)
@@ -336,7 +336,7 @@ def rollback():
     Downgrades to the previous revision. It has same effect as downgrade without specified
     revision id. 
     """
-    config = Config.from_file(MDB_CONFIG_FILE)
+    config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     env = get_env()
     migr_ctx = MigrationContext.from_env(env)

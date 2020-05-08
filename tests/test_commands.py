@@ -16,7 +16,7 @@ class TestCommands(unittest.TestCase):
     work_dir = os.path.join('/tmp', 'migrations')
     setup_res = None
     init_res = None
-    db_name = os.environ.get('TEST_DB_NAME', 'mdb_test_db')
+    db_name = os.environ.get('TEST_DB_NAME', 'mroll_test_db')
 
     def setUp(self):
         self.setup_res = self.run_setup_cmd()
@@ -26,14 +26,14 @@ class TestCommands(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.work_dir):
             shutil.rmtree(self.work_dir)
-        if os.path.exists(MDB_CONFIG_DIR):
-            shutil.rmtree(MDB_CONFIG_DIR)
+        if os.path.exists(MROLL_CONFIG_DIR):
+            shutil.rmtree(MROLL_CONFIG_DIR)
         self.drop_tables()
 
     def drop_tables(self):
         conn = pymonetdb.connect(self.db_name)
         try:
-            conn.execute("drop table sys.mdb_revisions;")
+            conn.execute("drop table sys.mroll_revisions;")
             conn.commit()
         except Exception as e:
             print(e)
@@ -59,16 +59,11 @@ class TestCommands(unittest.TestCase):
     def test_setup_command(self):
         res = self.setup_res
         self.assertTrue(res.exit_code == 0)
-        self.assertTrue(os.path.exists(MDB_CONFIG_FILE))
+        self.assertTrue(os.path.exists(MROLL_CONFIG_FILE))
 
     def test_init_cmd(self):
         res = self.init_res
         self.assertTrue(res.exit_code == 0)
-
-    def test_init_cmd(self):
-        runner = CliRunner()
-        res = runner.invoke(init)
-        self.assertTrue(res.exit_code==0)
     
     def test_revision_cmd(self):
         res = self.add_rev_cmd('add column b to foo')
@@ -95,9 +90,6 @@ class TestCommands(unittest.TestCase):
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 1)
 
-
-    def test_downgrade_cmd(self):
-        pass
 
     def test_rollback_cmd(self):
         migr_ctx = MigrationContext.from_env(get_env())
