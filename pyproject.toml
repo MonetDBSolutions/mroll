@@ -9,6 +9,9 @@ repository = "https://github.com/MonetDBSolutions/mroll"
 
 keywords = ["migration", "monetdb", "mroll"]
 
+[tool.poetry.scripts]
+mroll = "mroll.commands:cli"
+
 [tool.poetry.dependencies]
 python = "^3.7"
 pymonetdb = "^1.3.1"

@@ -233,7 +233,7 @@ def init():
         env.create_revisions_table() and print('rev tbl created')
     except Exception as e:
         print(e)
-        SystemExit('init failed')
+        raise SystemExit('init failed')
     print('Done')
     
 @cli.command(name='revision')
@@ -347,6 +347,11 @@ def rollback():
         raise SystemExit('Rollback failed!')
     print('Done')
 
+
+@cli.command(name='version')
+def version():
+    from . import __version__
+    print(__version__)
 
 if __name__ == '__main__':
     cli()
