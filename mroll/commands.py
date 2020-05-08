@@ -286,8 +286,17 @@ def new_revisions():
     """
     Shows revisions not applied yet
     """
-    # TODO
-    print('TODO: showing new revisions')
+    config = Config.from_file(MDB_CONFIG_FILE)
+    wd = WorkDirectory(config.work_dir)
+    env = get_env()
+    migr_ctx = MigrationContext.from_env(env)
+    working_set = wd.revisions
+    if migr_ctx.head is not None:
+        def filter_fn(rev):
+            return datetime.fromisoformat(rev.ts) > migr_ctx.head.ts
+        working_set = list(filter(filter_fn, working_set))
+    for r in working_set:
+        print(r)
 
 @cli.command(name="upgrade")
 def upgrade():
@@ -319,7 +328,7 @@ def downgrade(rev_id):
     Downgrades to the previous revison or to the revision with the id specified.
     """
     # TODO
-    print(rev_id)
+    print("TODO: not yet implemented")
 
 @cli.command(name='rollback')
 def rollback():
