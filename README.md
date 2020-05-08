@@ -1,11 +1,10 @@
 # Mroll migration tool
-Initial draft for db migration tool to be used with monetdb and pymonetdb.
+Database migration tool around MonetDB and pymonetdb.
 
-# Usage
-Project is setup with [Poetry](https://python-poetry.org/) dependency management tool.
+## Usage
 
 ```
-$ poetry run mroll/commands.py --help
+$ mroll --help
 Usage: commands.py [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
 
 Options:
@@ -24,34 +23,74 @@ Commands:
   upgrade        Applies all revisions not yet applied in work dir.
 ```
 
-## Usage example
-
-Setup work directory. Use -p, --path command option to setup in specific location. Defaults to current working directory if no option provided. 
+To set working directory use setup command.
 ```
-$ poetry run mroll/commands.py setup -p "/tmp/migrations"
+mroll setup --help
+```
+
+, use  -p/--path option to specify location. For an example lets use "/tmp/migration" location.
+
+```
+$ mroll setup -p "/tmp/migrations"
 ok
 ```
-edit work directory configuration file to setup db connection options.
+
+In the working directory modify mroll.ini with specific connection options
+
 ```
 $ vi /tmp/migrations/mroll.ini 
 ```
-create first revision with brief description 
+, then run "init" command to create revisions table 
+
 ```
-$ poetry run mroll/commands.py revision -m "create table foo"
+$ mroll init
+```
+create first revision with brief description 
+
+```
+$ mroll revision -m "create table foo"
 ok
-$ poetry run mroll/commands.py show all_revisions
+$ mroll show all_revisions
 <Revision id=fe00de6bfa19 description=create table foo>
 ```
-A new revison file was added under "/tmp/migrations/versions".Open and fill under "-- migration:upgrade" and "-- migration:downgrade" sections. Then run upgrade command.
+A new revison file was added under "/tmp/migrations/versions". Open and fill under "-- migration:upgrade" and "-- migration:downgrade" sections. 
 
 ```
-$ poetry run mroll/commands.py upgrade
+-- identifiers used by mroll
+-- id=fe00de6bfa19
+-- description=create tbl foo
+-- ts=2020-05-08T14:19:46.839773
+-- migration:upgrade
+	create table foo (a string, b string);
+	alter table foo add constraint foo_pk primary key (a);
+-- migration:downgrade
+	drop table foo;
 
 ```
+Then run "upgrade" command.
 
-# Development
+```
+$ mroll upgrade
+Done
+```
+Inspect what has being applied with "history" command
 
-Install dependencies
+```
+$ mroll history
+<Revision id=fe00de6bfa19 description=create tbl foo>
+```
+
+To revert last applied revision run "rollback" command. That will rin the sql under "migration:downgrade"
+section.
+```
+$ mroll rollback 
+Rolling back id=fe00de6bfa19 description=create tbl foo ...
+Done
+```
+
+## Development
+Project is setup with [Poetry](https://python-poetry.org/) dependency management tool. To install dependencies run
+
 ```
 poetry install
 ```
