@@ -34,7 +34,7 @@ jobs:
         # start database
         sudo systemctl enable monetdbd
         sudo systemctl start monetdbd
-        ls -lart /var/monetdb5/dbfarm
+        sudo ls -lart /var/monetdb5/dbfarm
         # set up test database
         sudo -u monetdb monetdb create mroll_test_db
         sudo -u monetdb monetdb release mroll_test_db
