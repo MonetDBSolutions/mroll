@@ -23,6 +23,23 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+    - name: set monetdb
+      run: |
+        # install monetdb
+        sudo apt-get install software-properties-common
+        sudo apt-get update -q
+        sudo sh -c "echo 'deb http://dev.monetdb.org/downloads/deb/ xenial monetdb' > /etc/apt/sources.list.d/monetdb.list"
+        wget --output-document=- http://dev.monetdb.org/downloads/MonetDB-GPG-KEY | sudo apt-key add -
+        sudo apt-get update -q
+        sudo apt-get install -qy monetdb5-sql monetdb-client
+        # start database
+        sudo mkdir -p -m 770 /var/lib/monetdb
+        sudo chown -R monetdb.monetdb /var/lib/monetdb
+        sudo -u monetdb monetdbd create /var/lib/monetdb
+        sudo -u monetdb monetdbd start /var/lib/monetdb
+        # set up test database
+        sudo -u monetdb monetdb create mroll_test_db
+        sudo -u monetdb monetdb release mroll_test_db
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
