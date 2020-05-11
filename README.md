@@ -1,6 +1,8 @@
 # Mroll migration tool
 Database migration tool around MonetDB and pymonetdb.
 
+![mroll ci](https://github.com/MonetDBSolutions/mroll/workflows/ci_workflow/badge.svg)
+
 ## Usage
 
 ```

@@ -9,6 +9,14 @@ repository = "https://github.com/MonetDBSolutions/mroll"
 
 keywords = ["migration", "monetdb", "mroll"]
 
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Topic :: Database",
+    "Topic :: Database :: Database Migration",
+]
+
 [tool.poetry.scripts]
 mroll = "mroll.commands:cli"
 
@@ -19,7 +27,7 @@ click = "^7.1.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
-pylint = "^2.5.0"
+flake8 = "^3.7.9"
 
 [build-system]
 requires = ["poetry>=0.12"]
