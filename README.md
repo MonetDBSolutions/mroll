@@ -94,8 +94,33 @@ Done
 ```
 
 ## Development
-Project is setup with [Poetry](https://python-poetry.org/) dependency management tool. Install poetry
+* Developer notes
+~mroll~ is developed using [[https://python-poetry.org/][Poetry]], for dependency management and
+packaging.
 
+** Installation for development
+In order to install ~mroll~ do the following:
+
+#+begin_src shell
+  pip3 install --user poetry
+  PYTHON_BIN_PATH="$(python3 -m site --user-base)/bin"
+  export PATH="$PATH:$PYTHON_BIN_PATH"
+
+  git clone git@github.com:MonetDBSolutions/mroll.git
+  cd mroll
+  poetry install
+  poetry run mroll --help
+#+end_src
+
+On 30/04/2020 [[https://github.com/gijzelaerr/pymonetdb/releases/tag/1.3.1][pymonetdb 1.3.1]] was released, which includes a feature needed to
+connect transparently to the MonetDB server. If you have installed the
+development version of ~pystethoscope~, before that date you need to update:
+
+#+BEGIN_SRC shell
+  cd monetdb-pystethoscope
+  git pull
+  poetry update
+#+END_SRC
 ```
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 ```
