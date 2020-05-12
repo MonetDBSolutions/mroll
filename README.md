@@ -5,6 +5,9 @@ Database migration tool around MonetDB and pymonetdb.
 
 ## Usage
 
+With MonetDB installed and running a project database, following commands can be used to set up migration 
+process in your project.
+
 ```
 $ mroll --help
 Usage: commands.py [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
@@ -82,7 +85,7 @@ $ mroll history
 <Revision id=fe00de6bfa19 description=create tbl foo>
 ```
 
-To revert last applied revision run "rollback" command. That will rin the sql under "migration:downgrade"
+To revert last applied revision run "rollback" command. That will run the sql under "migration:downgrade"
 section.
 ```
 $ mroll rollback 
@@ -91,8 +94,24 @@ Done
 ```
 
 ## Development
-Project is setup with [Poetry](https://python-poetry.org/) dependency management tool. To install dependencies run
+Project is setup with [Poetry](https://python-poetry.org/) dependency management tool. Install poetry
+
+```
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+```
+, install project dependencies with
 
 ```
 poetry install
+```
+, this will create virtual environment and install dependencies from poetry.lock file. Any of the above 
+commands then can be run with poetry
+
+```
+poetry run mroll/commands.py <command>
+```
+## Testing
+Run all unit tests
+```
+make test
 ```
