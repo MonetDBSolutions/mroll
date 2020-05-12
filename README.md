@@ -95,6 +95,7 @@ Done
 
 ## Development
 * Developer notes
+
 ~mroll~ is developed using [[https://python-poetry.org/][Poetry]], for dependency management and
 packaging.
 
@@ -114,7 +115,7 @@ In order to install ~mroll~ do the following:
 
 On 30/04/2020 [[https://github.com/gijzelaerr/pymonetdb/releases/tag/1.3.1][pymonetdb 1.3.1]] was released, which includes a feature needed to
 connect transparently to the MonetDB server. If you have installed the
-development version of ~pystethoscope~, before that date you need to update:
+development version of ~mroll~, before that date you need to update:
 
 #+BEGIN_SRC shell
   cd monetdb-pystethoscope
