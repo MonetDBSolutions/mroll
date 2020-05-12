@@ -134,3 +134,19 @@ class WorkDirectory:
                 res.append(Revision.from_file(rev_file))
         res.sort(key=lambda rev: datetime.fromisoformat(rev.ts))
         return res
+
+def get_all_upgrade_sql(work_dir=None):
+    if work_dir is None:
+        from .config import Config, MROLL_CONFIG_FILE
+        config = Config.from_file(MROLL_CONFIG_FILE)
+        work_dir = config.work_dir
+    wd = WorkDirectory(work_dir)
+    from io import StringIO
+    res=''
+    with StringIO() as buf:
+        for rev in wd.revisions:
+            buf.write(rev.upgrade_sql)
+            buf.write('\n')
+        res = buf.getvalue()
+    return res.strip()
+    

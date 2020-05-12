@@ -1,13 +1,12 @@
 import os
 import shutil
 import unittest
-import logging
-import shutil
 from click.testing import CliRunner
 import pymonetdb
 
 from mroll import __version__
 from mroll.commands import *
+from mroll.config import MROLL_CONFIG_DIR
 
 def test_version():
     assert __version__ == '0.1.0'
