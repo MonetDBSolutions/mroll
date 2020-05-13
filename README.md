@@ -17,6 +17,7 @@ Options:
 
 Commands:
   all_revisions
+  config         Set up mroll configuration under $HOME/.config/mroll
   downgrade      Downgrades to the previous revison or to the revision with...
   history        Shows applied revisions.
   init           Creates mroll_revisions tbl.
@@ -26,8 +27,9 @@ Commands:
   setup          Set up work directory.
   show
   upgrade        Applies all revisions not yet applied in work dir.
-```
+  version
 
+```
 To set working directory use setup command.
 ```
 mroll setup --help
@@ -38,6 +40,11 @@ mroll setup --help
 ```
 $ mroll setup -p "/tmp/migrations"
 ok
+```
+If no path specified defaults to setting "migrations" folder in current working directory.
+To update/set mroll configuartion use 'config' command. For example to update configuration setting for working directory path run.
+```
+mroll config -p <workdir_path>
 ```
 
 In the working directory modify mroll.ini with specific connection options

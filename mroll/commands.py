@@ -7,8 +7,8 @@ import configparser
 from datetime import datetime
 import importlib.util
 import importlib.machinery
-from .config import *
-from .migration import Revision, MigrationContext, WorkDirectory
+from mroll.config import *
+from mroll.migration import Revision, MigrationContext, WorkDirectory
 
 
 def load_module_py(module_id, path):
@@ -70,6 +70,9 @@ def setup(dir_, path):
 @cli.command(name='config')
 @click.option('-p', '--path', help='path to work directory')
 def config(path):
+    """
+    Set up mroll configuration under $HOME/.config/mroll
+    """
     directory = path or os.path.join(os.getcwd(), 'migrations')
     dir_list = os.listdir(directory)
     check = ('mroll.ini' in dir_list) and ('versions' in dir_list)
