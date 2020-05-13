@@ -67,6 +67,26 @@ def setup(dir_, path):
     assert os.path.exists(MROLL_CONFIG_FILE)
     print('ok')
 
+@cli.command(name='config')
+@click.option('-p', '--path', help='path to work directory')
+def config(path):
+    directory = path or os.path.join(os.getcwd(), 'migrations')
+    dir_list = os.listdir(directory)
+    check = ('mroll.ini' in dir_list) and ('versions' in dir_list)
+    if not check:
+        raise ValueError("specified path {} is not valid mroll working directory!")
+    #  setup config file
+    if not os.path.exists(SYS_CONFIG):
+        os.mkdir(SYS_CONFIG)
+    if not os.path.exists(MROLL_CONFIG_DIR):
+        os.mkdir(MROLL_CONFIG_DIR)
+    config = configparser.ConfigParser()
+    config['mroll'] = dict(work_dir=directory)
+    with open(MROLL_CONFIG_FILE, 'w') as configfile:
+        config.write(configfile)
+    assert os.path.exists(MROLL_CONFIG_FILE)
+    print('ok')
+
 @cli.command(name='init')
 def init():
     """
