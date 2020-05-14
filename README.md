@@ -3,6 +3,14 @@ Database migration tool around MonetDB and pymonetdb.
 
 ![mroll ci](https://github.com/MonetDBSolutions/mroll/workflows/ci_workflow/badge.svg)
 
+## Install
+
+Install mroll from PyPi
+
+```
+$ pip install mroll
+```
+
 ## Usage
 
 With MonetDB installed and running a project database, following commands can be used to set up migration 
@@ -117,7 +125,7 @@ In order to install ~mroll~ do the following:
   git clone git@github.com:MonetDBSolutions/mroll.git
   cd mroll
   poetry install
-  poetry run mroll --help
+  poetry run mroll/commands.py --help
 ```
 On 30/04/2020 [[https://github.com/gijzelaerr/pymonetdb/releases/tag/1.3.1][pymonetdb 1.3.1]] was released, which includes a feature needed to
 connect transparently to the MonetDB server. If you have installed the
