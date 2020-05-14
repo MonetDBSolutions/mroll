@@ -13,8 +13,7 @@ classifiers=[
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
-    "Topic :: Database",
-    "Topic :: Database :: Database Migration",
+    "Topic :: Database"
 ]
 
 [tool.poetry.scripts]
