@@ -1,10 +1,11 @@
-# Mroll migration tool
-~mroll~ has been designed to aid MonetDB users with managing database migrations.
-The functionality covers both roll forward and backward migration functionality.
-Although you can deploy ~mroll~ from any point in time onwards, it is advised to use it
-from day one, i.e. the creation of the database.
-~mroll~ has been used internally to manage the continuous integration workflow of MonetDB.
 ![mroll ci](https://github.com/MonetDBSolutions/mroll/workflows/ci_workflow/badge.svg)
+
+# Mroll migration tool
+`mroll` has been designed to aid MonetDB users with managing database migrations.
+The functionality covers both roll forward and backward migration functionality.
+Although you can deploy `mroll` from any point in time onwards, it is advised to use it
+from day one, i.e. the creation of the database.
+`mroll` has been used internally to manage the continuous integration workflow of MonetDB.
 
 ## Install
 
@@ -37,11 +38,11 @@ Options:
   --path        The location of the working directory
 ```
 
-Each command may come with some options, explained by the --help addition.
+Each command may come with some options, explained by the `--help` addition.
 For example, the location of the migration directory can be specified when you install mroll
-with an option --path option to specify location. For an example, --path "/tmp/migration" location.
+with an option `--path` option to specify location. For an example, `--path "/tmp/migration"` location.
 
-To update/set mroll configuration use 'config' command.
+To update/set `mroll` configuration use the `config` command.
 For example to update configuration setting for working directory path run.
 ```
 mroll config -p <workdir_path>
@@ -49,23 +50,23 @@ mroll config -p <workdir_path>
 
 ## Usage
 To illustrate the functionality we walk you through the steps to get a MonetDB database, called
-*demo*, created and managed. We assume you have downloaded ~mroll~ (see below) and are all set to give it a try.
+*demo*, created and managed. We assume you have downloaded `mroll` (see below) and are all set to give it a try.
 
 #### Setup 
-~mroll~ needs a working directory for each database you want to manage. There is no restriction on
+`mroll` needs a working directory for each database you want to manage. There is no restriction on
 its location, but you could keep the migration scripts in your application 
-folder, e.g. .../app/migrations. From the .../app directory issue the command:
+folder, e.g. `.../app/migrations`. From the `.../app` directory issue the command:
 
 ```
 $ mroll setup
 ok
 ```
-A subdirectory ~migrations~ is being created to manage migrations versions.
+A subdirectory `migrations` is being created to manage migrations versions.
 
 #### Configuration
-~mroll~ needs information on the database whereabouts and credentials to initiate the migration steps.
-Make sure you have already created and released the demo database using the ~monetdb~ tools.
-Then complete the file migrations/mroll.ini to something like:
+`mroll` needs information on the database whereabouts and credentials to initiate the migration steps.
+Make sure you have already created and released the demo database using the `monetdb` tools.
+Then complete the file `migrations/mroll.ini` to something like:
 ```
 [db]
 db_name=demo
@@ -82,7 +83,7 @@ $ mroll init
 ```
 #### Define the first revision
 The empty database will be populated with a database schema.
-For this we define a revision. Revision names are generatedcd ..
+For this we define a revision. Revision names are generated
 
 ```
 $ mroll revision -m "Initialize the database"
@@ -90,8 +91,8 @@ ok
 $ mroll show all_revisions
 <Revision id=fe00de6bfa19 description=Initialize the database>
 ```
-A new revison file was added under "/tmp/migrations/versions". 
-Open it and add the SQL commands under "-- migration:upgrade" and "-- migration:downgrade" sections. 
+A new revison file was added under `/tmp/migrations/versions`. 
+Open it and add the SQL commands under `-- migration:upgrade` and `-- migration:downgrade` sections. 
 Be aware that you may have to wrap the commands within transaction brackets.
 
 
@@ -120,7 +121,7 @@ $ mroll history
 <Revision id=fe00de6bfa19 description=create tbl foo>
 ```
 
-To revert last applied revision run "rollback" command. That will run the sql under "migration:downgrade"
+To revert last applied revision run the `rollback` command. That will run the sql under `migration:downgrade`
 section.
 ```
 $ mroll rollback 
@@ -129,13 +130,13 @@ Done
 ```
 
 ## Development
-* Developer notes
+### Developer notes
 
-~mroll~ is developed using [[https://python-poetry.org/][Poetry]], for dependency management and
+`mroll` is developed using [Poetry](https://python-poetry.org/), for dependency management and
 packaging.
 
-** Installation for development
-In order to install ~mroll~ do the following:
+### Installation for development
+In order to install `mroll` do the following:
 
 ```
   pip3 install --user poetry
@@ -147,20 +148,12 @@ In order to install ~mroll~ do the following:
   poetry install
   poetry run mroll/commands.py --help
 ```
-On 30/04/2020 [[https://github.com/gijzelaerr/pymonetdb/releases/tag/1.3.1][pymonetdb 1.3.1]] was released, which includes a feature needed to
-connect transparently to the MonetDB server. If you have installed the
-development version of ~mroll~, before that date you need to update:
-```
-  cd monetdb-mroll
-  git pull
-  poetry update
-```
-, install project dependencies with
+Install project dependencies with
 
 ```
 poetry install
 ```
-, this will create virtual environment and install dependencies from poetry.lock file. Any of the above 
+This will create virtual environment and install dependencies from the `poetry.lock` file. Any of the above 
 commands then can be run with poetry
 
 ```
