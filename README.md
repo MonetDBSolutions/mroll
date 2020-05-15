@@ -21,21 +21,20 @@ The command synopsis summarizes the functionality.
 ```
 $ mroll --help
 Usage: commands.py [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
-Commands:
-  all_revisions
-  config         Set up mroll configuration under $HOME/.config/mroll
-  history        Shows applied revisions.
-  init           Creates mroll_revisions tbl.
-  new_revisions  Shows revisions not applied yet
-  revision       Creates new revision file from a template.
-  rollback       Roolbacks last applied revision by default.
-  setup          Set up work directory.
-  show
-  upgrade        Applies all revisions not yet applied in work dir.
-  version        The mroll version information
+
 Options:
-  --help        Show this message and exit.
-  --path        The location of the working directory
+  --help  Show this message and exit.
+
+Commands:
+  config    Set up mroll configuration under $HOME/.config/mroll
+  history   Shows applied revisions.
+  init      Creates mroll_revisions tbl.
+  revision  Creates new revision from a template.
+  rollback  Downgrades to previous revision by default.
+  setup     Set up work directory.
+  show      Shows revisions information.
+  upgrade   Applies all revisions not yet applied in work dir.
+  version   Shows current version
 ```
 
 Each command may come with some options, explained by the `--help` addition.
