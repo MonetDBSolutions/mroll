@@ -65,8 +65,8 @@ class TestCommands(unittest.TestCase):
         self.assertTrue(res.exit_code == 0)
         # another try
         res = self.run_init_cmd()
-        self.assertIsNotNone(res.stdout)
-        
+        self.assertNotEqual(res.stdout, '')
+
     def test_revision_cmd(self):
         res = self.add_rev_cmd('add column b to foo')
         self.assertTrue(res.exit_code==0)
@@ -76,8 +76,36 @@ class TestCommands(unittest.TestCase):
         self.add_rev_cmd('add column b to foo')
         self.add_rev_cmd('add column c to foo')
         runner = CliRunner()
-        res = runner.invoke(all_revisions)
+        res = runner.invoke(show, ['all'])
         self.assertTrue(res.exit_code==0)
+
+    def test_show_pending_revisions(self):
+        self.add_rev_cmd('add column a to foo')
+        wd = WorkDirectory(self.work_dir)
+        self.assertTrue(len(wd.revisions) == 1)
+        runner = CliRunner()
+        res = runner.invoke(upgrade)
+        self.assertTrue(res.exit_code==0)
+        migr_ctx = MigrationContext.from_env(get_env())
+        self.assertIsNotNone(migr_ctx.head)
+        self.assertTrue(len(migr_ctx.revisions) == 1)
+        self.add_rev_cmd('add column a to bar')
+        self.add_rev_cmd('add column a to baz')
+        self.assertTrue(len(wd.revisions) == 3)
+        wd = WorkDirectory(self.work_dir)
+        res = runner.invoke(show, ['pending'])
+        self.assertTrue(res.exit_code==0)
+
+    def test_show_applied_revisions(self):
+        self.add_rev_cmd('add column a to foo')
+        wd = WorkDirectory(self.work_dir)
+        self.assertTrue(len(wd.revisions) == 1)
+        runner = CliRunner()
+        res = runner.invoke(upgrade)
+        self.assertTrue(res.exit_code==0)
+        res = runner.invoke(show, ['applied'])
+        self.assertTrue(res.exit_code==0)
+        self.assertNotEqual(res.stdout, '')
         
     def test_upgrade_all_cmd(self):
         migr_ctx = MigrationContext.from_env(get_env())

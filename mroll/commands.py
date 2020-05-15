@@ -113,7 +113,7 @@ def init():
 @click.option('-m', '--message', help='gets added to revision name')
 def revision(message):
     """
-    Creates new revision file from a template.
+    Creates new revision from a template.
     """
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
@@ -138,26 +138,22 @@ def history():
     """
     Shows applied revisions.
     """
-    migr_ctx = MigrationContext.from_env(get_env())
-    for r in migr_ctx.revisions:
-        print(r)
-
-@cli.command(name="show")
-@click.pass_context
-def show(ctx):
-    ctx.obj['show_cmd'] = True
+    return applied_revisions()
     
-@cli.command(name="all_revisions")
 def all_revisions():
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     for rev in wd.revisions:
         print(rev)
 
-@cli.command(name='new_revisions')
-def new_revisions():
+def applied_revisions():
+    migr_ctx = MigrationContext.from_env(get_env())
+    for r in migr_ctx.revisions:
+        print(r)
+
+def pending_revisions():
     """
-    Shows revisions not applied yet
+    Shows pending revisions not yet applied.
     """
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
@@ -170,6 +166,21 @@ def new_revisions():
         working_set = list(filter(filter_fn, working_set))
     for r in working_set:
         print(r)
+
+@cli.command(name="show")
+@click.argument('subcmd', nargs=1)
+def show(subcmd):
+    """
+    Shows revisions information.\n
+    mroll show [ all | pending | applied ]
+    """
+    if subcmd not in ['all', 'pending', 'applied']:
+        raise SystemExit("Invalid sub command!")
+    if subcmd == 'pending':
+        return pending_revisions()
+    if subcmd == 'applied':
+        return applied_revisions()
+    return all_revisions()
 
 @cli.command(name="upgrade")
 @click.option('-n', '--num', help="run n number of pending revisions")
@@ -227,6 +238,9 @@ def rollback(num):
 
 @cli.command(name='version')
 def version():
+    """
+    Shows current version
+    """
     from . import __version__
     print(__version__)
 
