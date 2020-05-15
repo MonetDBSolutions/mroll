@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mroll"
-version = "0.1.0"
+version = "0.2.0"
 description = "monetdb migration tool"
 license = "MPL-2.0"
 readme = "README.md"

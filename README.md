@@ -91,9 +91,7 @@ $ mroll show all_revisions
 <Revision id=fe00de6bfa19 description=Initialize the database>
 ```
 A new revison file was added under `/tmp/migrations/versions`. 
-Open it and add the SQL commands under `-- migration:upgrade` and `-- migration:downgrade` sections. 
-Be aware that you may have to wrap the commands within transaction brackets.
-
+Open it and add the SQL commands under `-- migration:upgrade` and `-- migration:downgrade` sections.
 
 ```
 vi migrations/versions/
