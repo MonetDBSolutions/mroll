@@ -166,7 +166,8 @@ def new_revisions():
         print(r)
 
 @cli.command(name="upgrade")
-def upgrade():
+@click.option('-n', '--num', help="run n number of pending revisions")
+def upgrade(num):
     """
     Applies all revisions not yet applied in work dir.
     """
@@ -180,7 +181,8 @@ def upgrade():
         def filter_fn(rev):
             return datetime.fromisoformat(rev.ts) > migr_ctx.head.ts
         working_set = list(filter(filter_fn, working_set))
-    for rev in working_set:
+    ptr = num or len(working_set)
+    for rev in working_set[:ptr]:
         try:
             env.add_revision(rev.id, rev.description, rev.ts, rev.upgrade_sql)
         except Exception as e:
