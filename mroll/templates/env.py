@@ -23,25 +23,23 @@ def get_head(db_name=db_name, tbl_name=tbl_name):
         curr.execute(sql)
         rev = curr.fetchone()
     finally:
-        conn.close()
+        conn.close() 
     return rev
 
 def create_revisions_table(db_name=db_name, tbl_name=tbl_name):
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)
     sql = """
-    create table if not exists sys."{}"(id string, description string, ts timestamp);
+    create table sys."{}"(id string, description string, ts timestamp);
     alter table sys."{}" add constraint mroll_rev_pk primary key (id);
     """.format(tbl_name, tbl_name)
     try:
         conn.execute(sql)
         conn.commit()
-        return True
     except PyMonetdbErr as e:
         conn.rollback()
         raise(e)    
     finally:
         conn.close()
-    return False
 
 def get_revisions(db_name=db_name, tbl_name=tbl_name):
     conn = pymonetdb.connect(db_name, port=port, username=user, password=password)

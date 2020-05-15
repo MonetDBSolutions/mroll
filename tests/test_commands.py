@@ -63,7 +63,10 @@ class TestCommands(unittest.TestCase):
     def test_init_cmd(self):
         res = self.init_res
         self.assertTrue(res.exit_code == 0)
-    
+        # another try
+        res = self.run_init_cmd()
+        self.assertIsNotNone(res.stdout)
+        
     def test_revision_cmd(self):
         res = self.add_rev_cmd('add column b to foo')
         self.assertTrue(res.exit_code==0)

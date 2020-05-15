@@ -93,9 +93,15 @@ def config(path):
 @cli.command(name='init')
 def init():
     """
-    Creates mroll_revisions tbl. Shuld be run once.
+    Creates mroll_revisions tbl. Should be run once.
     """
     env = get_env()
+    try:
+        # if following succeeds then mroll revisons tbl exist.
+        env.get_head()
+        return print("Nothing to do! Mroll revisions table already exist.")
+    except:
+        pass
     try:
         env.create_revisions_table() and print('{} created'.format(env.tbl_name))
     except Exception as e:
