@@ -103,7 +103,7 @@ class TestCommands(unittest.TestCase):
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 1)
 
-    def test_rollback_cmd(self):
+    def test_rollback_default_cmd(self):
         migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNone(migr_ctx.head)
         self.add_rev_cmd('create tbl foo')
@@ -119,3 +119,22 @@ class TestCommands(unittest.TestCase):
         migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 0)
+
+    def test_rollback_step_cmd(self):
+        migr_ctx = MigrationContext.from_env(get_env())
+        self.assertIsNone(migr_ctx.head)
+        self.add_rev_cmd('create tbl foo')
+        self.add_rev_cmd('create tbl bar')
+        self.add_rev_cmd('create tbl baz')
+        wd = WorkDirectory(self.work_dir)
+        self.assertTrue(len(wd.revisions) == 3)
+        runner = CliRunner()
+        res = runner.invoke(upgrade)
+        self.assertTrue(res.exit_code==0)
+        migr_ctx = MigrationContext.from_env(get_env())
+        self.assertIsNotNone(migr_ctx.head)
+        self.assertTrue(len(migr_ctx.revisions) == 3)
+        res = runner.invoke(rollback, ['-n', 2])
+        migr_ctx = MigrationContext.from_env(get_env())
+        self.assertIsNotNone(migr_ctx.head)
+        self.assertTrue(len(migr_ctx.revisions) == 1)

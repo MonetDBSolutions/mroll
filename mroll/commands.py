@@ -190,41 +190,34 @@ def upgrade(num):
             raise SystemExit('Upgrade failed at revision id={} description={}'.format(rev.id, rev.description))
     print('Done')
 
-@cli.command(name="downgrade")
-@click.option('-r', '--rev', 'rev_id', help="revision id")
-def downgrade(rev_id):
-    """
-    Downgrades to the previous revison or to the revision with the id specified.
-    """
-    # TODO
-    print("TODO: not yet implemented")
-
 @cli.command(name='rollback')
-def rollback():
+@click.option('-n', '--num', help="rollbacks n number applied revisions")
+def rollback(num):
     """
-    Downgrades to the previous revision. It has same effect as downgrade without specified
-    revision id. 
+    Downgrades to previous revision by default. 
     """
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
-    env = get_env()
-    migr_ctx = MigrationContext.from_env(env)
-    if migr_ctx.head is None:
-        print("Nothing to do!")
-        return
-    print('Rolling back id={} description={} ...'.format(migr_ctx.head.id, migr_ctx.head.description)) 
-    downgrade_sql = ''
-    for rev in wd.revisions:
-        if rev.id == migr_ctx.head.id:
-            downgrade_sql = rev.downgrade_sql
-            break
-    try:
-        env.remove_revision(migr_ctx.head.id, downgrade_sql)
-    except Exception as e:
-        print(e)
-        raise SystemExit('Rollback failed!')
+    count = num or 1
+    while count:
+        env = get_env()
+        migr_ctx = MigrationContext.from_env(env)
+        if migr_ctx.head is None:
+            print("Nothing to do!")
+            return
+        print('Rolling back id={} description={} ...'.format(migr_ctx.head.id, migr_ctx.head.description)) 
+        downgrade_sql = ''
+        for rev in reversed(wd.revisions):
+            if rev.id == migr_ctx.head.id:
+                downgrade_sql = rev.downgrade_sql
+                break
+        try:
+            env.remove_revision(migr_ctx.head.id, downgrade_sql)
+        except Exception as e:
+            print(e)
+            raise SystemExit('Rollback failed!')
+        count-=1
     print('Done')
-
 
 @cli.command(name='version')
 def version():

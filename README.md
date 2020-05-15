@@ -23,16 +23,15 @@ Usage: commands.py [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
 Commands:
   all_revisions
   config         Set up mroll configuration under $HOME/.config/mroll
-  downgrade      Downgrades to the previous revison or to the revision with...
   history        Shows applied revisions.
   init           Creates mroll_revisions tbl.
   new_revisions  Shows revisions not applied yet
   revision       Creates new revision file from a template.
-  rollback       Downgrades to the previous revision.
+  rollback       Roolbacks last applied revision by default.
   setup          Set up work directory.
   show
   upgrade        Applies all revisions not yet applied in work dir.
-  version        The ~mroll~ version information
+  version        The mroll version information
 Options:
   --help        Show this message and exit.
   --path        The location of the working directory
