@@ -140,18 +140,24 @@ def history():
     """
     return applied_revisions()
     
-def all_revisions():
+def all_revisions(show_patch=False):
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     for rev in wd.revisions:
-        print(rev)
+        if show_patch:
+            print(rev.serialize())
+        else:
+            print(rev)
 
-def applied_revisions():
+def applied_revisions(show_patch=False):
     migr_ctx = MigrationContext.from_env(get_env())
     for r in migr_ctx.revisions:
-        print(r)
+        if show_patch:
+            print(r.serialize())
+        else:
+            print(r)
 
-def pending_revisions():
+def pending_revisions(show_patch=False):
     """
     Shows pending revisions not yet applied.
     """
@@ -165,22 +171,36 @@ def pending_revisions():
             return datetime.fromisoformat(rev.ts) > migr_ctx.head.ts
         working_set = list(filter(filter_fn, working_set))
     for r in working_set:
-        print(r)
+        if show_patch:
+            print(r.serialize())
+        else:
+            print(r)
 
 @cli.command(name="show")
 @click.argument('subcmd', nargs=1)
-def show(subcmd):
+@click.argument('options', required=False)
+def show(subcmd, options):
     """
     Shows revisions information.\n
-    mroll show [ all | pending | applied ]
+    mroll show [ all | pending | applied ] [-p|--patch]
     """
+    def usage(err_msg: str):
+        res ="Error: {}\n".format(err_msg) if err_msg else ''
+        res += 'Usage:\n'
+        res+='mroll show [pending|applied|all] [-p|--patch]\n'
+        return res
+    show_patch = False
     if subcmd not in ['all', 'pending', 'applied']:
-        raise SystemExit("Invalid sub command!")
+        raise SystemExit(usage("Invalid subcommand!"))
+    if options:
+        if options not in ['-p', '--p']:
+            raise SystemExit(usage("Invalid subcommand option!"))
+        show_patch = True 
     if subcmd == 'pending':
-        return pending_revisions()
+        return pending_revisions(show_patch=show_patch)
     if subcmd == 'applied':
-        return applied_revisions()
-    return all_revisions()
+        return applied_revisions(show_patch=show_patch)
+    return all_revisions(show_patch=show_patch)
 
 @cli.command(name="upgrade")
 @click.option('-n', '--num', help="run n number of pending revisions")

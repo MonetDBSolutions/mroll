@@ -117,7 +117,7 @@ Inspect what has being applied with "history" command
 $ mroll history
 <Revision id=fe00de6bfa19 description=create tbl foo>
 ```
-For revisions overview use `mroll show [all|pending|applied]` , `mroll applied` is equivalent to 
+For revisions overview use `mroll show [all|pending|applied]`, `mroll applied` is equivalent to 
 `mroll history`.
 ```
 $mroll show applied

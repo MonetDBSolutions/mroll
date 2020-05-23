@@ -19,6 +19,7 @@ class Revision:
         with StringIO() as buf:
             buf.write('-- identifiers used by mroll\n')
             buf.write('-- id={}\n'.format(self.id))
+            buf.write('-- description={}\n'.format(self.description))
             ts = self.ts.isoformat() if type(self.ts) == datetime else self.ts
             buf.write('-- ts={}\n'.format(ts))
             buf.write('-- migration:upgrade\n')
