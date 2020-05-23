@@ -94,7 +94,7 @@ A new revison file was added under `/tmp/migrations/versions`.
 Open it and add the SQL commands under `-- migration:upgrade` and `-- migration:downgrade` sections.
 
 ```
-vi migrations/versions/
+vi tmp/migrations/versions/<rev_file>
 -- identifiers used by mroll
 -- id=fe00de6bfa19
 -- description=create tbl foo
@@ -111,10 +111,16 @@ Then run "upgrade" command.
 $ mroll upgrade
 Done
 ```
-Inspect what has being applied with "history" command
 
+Inspect what has being applied with "history" command
 ```
 $ mroll history
+<Revision id=fe00de6bfa19 description=create tbl foo>
+```
+For revisions overview use `mroll show [all|pending|applied]` , `mroll applied` is equivalent to 
+`mroll history`.
+```
+$mroll show applied
 <Revision id=fe00de6bfa19 description=create tbl foo>
 ```
 
