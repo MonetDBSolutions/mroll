@@ -1,3 +1,6 @@
+"""
+MonetDB specific implementation.
+"""
 import pymonetdb
 import configparser
 import os
@@ -14,8 +17,7 @@ hostname = config['host']['hostname']
 port = config['host']['port']
 tbl_name = config['mroll']['rev_history_tbl_name']
 
-
-def get_head(db_name=db_name, hostname=hostname, port=port, username=username, password=password, tbl_name=tbl_name):
+def get_head(db_name:str=db_name, hostname:str=hostname, port:int=port, username:str=username, password:str=password, tbl_name:str=tbl_name) -> None:
     rev = None
     conn = pymonetdb.connect(db_name, hostname=hostname, port=port, username=username, password=password)
     try:
@@ -27,7 +29,7 @@ def get_head(db_name=db_name, hostname=hostname, port=port, username=username, p
         conn.close() 
     return rev
 
-def create_revisions_table(db_name=db_name, hostname=hostname, port=port, username=username, password=password, tbl_name=tbl_name):
+def create_revisions_table(db_name:str=db_name, hostname:str=hostname, port:int=port, username:str=username, password:str=password, tbl_name:str=tbl_name) -> None:
     conn = pymonetdb.connect(db_name, hostname=hostname, port=port, username=username, password=password)
     sql = """
     create table sys."{}"(id string, description string, ts timestamp);
@@ -42,7 +44,7 @@ def create_revisions_table(db_name=db_name, hostname=hostname, port=port, userna
     finally:
         conn.close()
 
-def get_revisions(db_name=db_name, hostname=hostname, port=port, username=username, password=password, tbl_name=tbl_name):
+def get_revisions(db_name:str=db_name, hostname:str=hostname, port:int=port, username:str=username, password:str=password, tbl_name:str=tbl_name) -> None:
     conn = pymonetdb.connect(db_name, hostname=hostname, port=port, username=username, password=password)
     sql = """select id, description, ts from sys."{}" order by ts""".format(tbl_name)
     cur = conn.cursor()
@@ -52,9 +54,9 @@ def get_revisions(db_name=db_name, hostname=hostname, port=port, username=userna
     finally:
         conn.close()
 
-def add_revision(id_, description, ts, upgrade_sql, 
-    db_name=db_name, hostname=hostname, port=port, 
-    username=username, password=password, tbl_name=tbl_name):
+def add_revision(id_:str, description:str, ts:str, upgrade_sql:str, 
+    db_name:str=db_name, hostname:str=hostname, port:int=port, 
+    username:str=username, password:str=password, tbl_name:str=tbl_name) -> None:
     """
     Applies the upgrade sql and adds it to meta data in one transaction
     """
@@ -73,9 +75,9 @@ def add_revision(id_, description, ts, upgrade_sql,
     finally:
         conn.close()
 
-def remove_revision(id_, downgrade_sql, 
-    db_name=db_name, hostname=hostname, port=port, 
-    username=username, password=password, tbl_name=tbl_name):
+def remove_revision(id_:str, downgrade_sql:str, 
+    db_name:str=db_name, hostname:str=hostname, port:int=port, 
+    username:str=username, password:str=password, tbl_name:str=tbl_name) -> None:
     conn = pymonetdb.connect(db_name, hostname=hostname, port=port, username=username, password=password)
     cur = conn.cursor()
     sql = """delete from sys."{}" where id=%s""".format(tbl_name)
