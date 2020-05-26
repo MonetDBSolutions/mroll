@@ -1,6 +1,7 @@
 import os
-import configparser
+from configparser import ConfigParser
 from datetime import datetime
+from mroll.exceptions import InvalidWorkDirError
 
 def gen_rev_id():
     import uuid
@@ -102,17 +103,18 @@ class MigrationContext:
         mc.revisions = revisions
         return mc
 
-
 class WorkDirectory:
     def __init__(self, path):
-        if not os.path.exists(path) and not os.listdir(path):
-            raise RuntimeError('Script directory not initilized. Run setup command first!')
+        if not os.path.exists(path):
+            raise RuntimeError("""Error: work directory doesn't exist. Run setup command first.""")
+        if not os.listdir(path):
+            raise RuntimeError("""Error: invalid work directory. Run setup command.""")
         self.path = path
 
     @property
     def config(self):
         configfile = os.path.join(self.path, 'mroll.ini')
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(configfile)
         return config
 
@@ -146,6 +148,21 @@ class WorkDirectory:
                 res.append(Revision.from_file(rev_file))
         res.sort(key=lambda rev: datetime.fromisoformat(rev.ts))
         return res
+    
+    def config_validate(self):
+        """
+        Performs validation checks, e.g. mroll.ini is set and ready.
+        """
+        config = self.config
+        sections = config.sections()
+        for sec in sections:
+            options = config.options(sec)
+            for opt in options:
+                try:
+                    assert config.get(sec, opt)
+                except AssertionError:
+                    path = os.path.join(self.path, 'mroll.ini')
+                    raise ValueError("Error: [{}][{}] not set in {}".format(sec, opt, path))
 
 def get_all_upgrade_sql(work_dir=None):
     if work_dir is None:

@@ -12,7 +12,7 @@ class Config:
     @classmethod
     def from_file(cls, configfile):
         if not os.path.exists(configfile):
-            raise RuntimeError('No config file found in \'{}\'. Run setup command first!'.format(MROLL_CONFIG_DIR))
+            raise RuntimeError('Error: No config file found in \'{}\'. Run setup command first!'.format(MROLL_CONFIG_DIR))
         import configparser
         config = configparser.ConfigParser()
         config.read(configfile)

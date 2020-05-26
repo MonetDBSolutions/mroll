@@ -30,7 +30,25 @@ def get_env():
 
 def gen_rev_id():
     import uuid
-    return uuid.uuid4().hex[-12:] 
+    return uuid.uuid4().hex[-12:]
+
+def ensure_setup():
+    try:
+        config = Config.from_file(MROLL_CONFIG_FILE)
+        wd = WorkDirectory(config.work_dir)
+        wd.config_validate()
+    except RuntimeError as e:
+        raise SystemExit(e)
+    except ValueError as e:
+        raise SystemExit(e)
+
+def ensure_init():
+    ensure_setup()
+    env = get_env()
+    try:
+        env.get_head()
+    except:
+        raise SystemExit("Error: mroll not initialized! Run init command first.")
 
 # ----------------------------------
 
@@ -95,6 +113,9 @@ def init():
     """
     Creates mroll_revisions tbl. Should be run once.
     """
+    ensure_setup()
+    config = Config.from_file(MROLL_CONFIG_FILE)
+    wd = WorkDirectory(config.work_dir)
     env = get_env()
     try:
         # if following succeeds then mroll revisons tbl exist.
@@ -102,11 +123,8 @@ def init():
         return print("Nothing to do! Mroll revisions table already exist.")
     except:
         pass
-    try:
-        env.create_revisions_table() and print('{} created'.format(env.tbl_name))
-    except Exception as e:
-        print(e)
-        raise SystemExit('init failed')
+    env.create_revisions_table()
+    print('{} table created'.format(env.tbl_name))
     print('Done')
     
 @cli.command(name='revision')
@@ -115,6 +133,7 @@ def revision(message):
     """
     Creates new revision from a template.
     """
+    ensure_setup()
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     ts = datetime.now().isoformat()
@@ -131,6 +150,7 @@ def history():
     """
     Shows applied revisions.
     """
+    ensure_init()
     return applied_revisions()
     
 def all_revisions(show_patch=False):
@@ -177,6 +197,7 @@ def show(subcmd, options):
     Shows revisions information.\n
     mroll show [ all | pending | applied ] [-p|--patch]
     """
+    ensure_init()
     def usage(err_msg: str):
         res ="Error: {}\n".format(err_msg) if err_msg else ''
         res += 'Usage:\n'
@@ -201,6 +222,7 @@ def upgrade(step):
     """
     Applies revisions in work dir not yet applied.
     """ 
+    ensure_init()
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     env = get_env()
@@ -239,6 +261,7 @@ def rollback(step, rev_id):
     """
     Downgrades to previous revision by default. 
     """
+    ensure_init()
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     env = get_env()
