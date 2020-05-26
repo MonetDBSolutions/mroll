@@ -126,6 +126,7 @@ class TestCommands(unittest.TestCase):
         self.assertNotEqual(res.stdout, '')
         
     def test_upgrade_default_cmd(self):
+        #  Test upgrade with no options
         migr_ctx = MigrationContext.from_env(get_env())
         wd = WorkDirectory(self.work_dir)
         revisions = [
@@ -151,6 +152,7 @@ class TestCommands(unittest.TestCase):
         self.assertTrue(len(migr_ctx.revisions) == 2)
 
     def test_upgrade_num_command(self):
+        # Test upgrade cmd with a step 
         migr_ctx = MigrationContext.from_env(get_env())
         wd = WorkDirectory(self.work_dir)
         revisions = [
@@ -186,6 +188,7 @@ class TestCommands(unittest.TestCase):
         self.assertTrue(res.exit_code==1)
 
     def test_rollback_default_cmd(self):
+        # test rollback no cli options
         migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNone(migr_ctx.head)
         wd = WorkDirectory(self.work_dir)
