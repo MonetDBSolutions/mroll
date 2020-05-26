@@ -115,23 +115,15 @@ def revision(message):
     """
     Creates new revision from a template.
     """
-    # TODO use wd.add_revision_file
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     ts = datetime.now().isoformat()
     id_ = gen_rev_id()
     description = message or ''
-    file_ = os.path.join(get_templates_dir(), 'revision_template.txt')
-    with open(file_, 'r') as f:
-        template = f.read()
-        kebab = description.strip().replace(' ', '_')
-        fn = os.path.join(wd.path, 'versions', '{}_{}.sql'.format(id_, kebab))
-        with open(fn, 'w+') as fw:
-            fw.write('-- identifiers used by mroll\n')
-            header = "-- id={}\n-- description={}\n-- ts={}\n".format(id_, description, ts)
-            fw.write(header)
-            fw.write(template)
-        assert os.path.exists(fn)
+    wd.add_revision(Revision(id_, description, ts))
+    kebab = description.strip().replace(' ', '_')
+    fn = os.path.join(wd.path, 'versions', '{}_{}.sql'.format(id_, kebab))
+    assert os.path.exists(fn)
     print('ok')
 
 @cli.command(name='history')
