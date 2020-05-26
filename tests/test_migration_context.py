@@ -2,8 +2,8 @@ import os
 import shutil
 from unittest import TestCase
 from click.testing import CliRunner
-from mroll.migration import Revision, get_all_upgrade_sql
-from mroll.commands import setup, revision, rev_id
+from mroll.migration import Revision, get_all_upgrade_sql, gen_rev_id
+from mroll.commands import setup, revision
 from mroll.config import MROLL_CONFIG_DIR
 
 class TestMigrationContext(TestCase):
@@ -76,7 +76,7 @@ class TestMigrationContext(TestCase):
 
     def test_get_all_upgrade_sql(self):
         for i in range(3):
-            id_ = rev_id()
+            id_ = gen_rev_id()
             content="""
             -- identifiers used by mroll
             -- id={}

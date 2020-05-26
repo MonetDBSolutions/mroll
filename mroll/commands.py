@@ -3,12 +3,13 @@
 import click
 import os
 import shutil
-import configparser
+import configparser 
 from datetime import datetime
 import importlib.util
 import importlib.machinery
 from mroll.config import *
 from mroll.migration import Revision, MigrationContext, WorkDirectory
+from mroll.exceptions import RevisionOperationError
 
 
 def load_module_py(module_id, path):
@@ -27,10 +28,9 @@ def get_env():
     env = load_module_py('env', path)
     return env
 
-def rev_id():
+def gen_rev_id():
     import uuid
-    return uuid.uuid4().hex[-12:]
-    
+    return uuid.uuid4().hex[-12:] 
 
 # ----------------------------------
 
@@ -115,10 +115,11 @@ def revision(message):
     """
     Creates new revision from a template.
     """
+    # TODO use wd.add_revision_file
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     ts = datetime.now().isoformat()
-    id_ = rev_id()
+    id_ = gen_rev_id()
     description = message or ''
     file_ = os.path.join(get_templates_dir(), 'revision_template.txt')
     with open(file_, 'r') as f:
@@ -208,6 +209,7 @@ def upgrade(num):
     """
     Applies all revisions not yet applied in work dir.
     """
+    # TODO FIX all upgrade sql should be in 1 transacton. 
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     env = get_env()
@@ -219,41 +221,52 @@ def upgrade(num):
             return datetime.fromisoformat(rev.ts) > migr_ctx.head.ts
         working_set = list(filter(filter_fn, working_set))
     ptr = num or len(working_set)
+    # TODO try catch
     for rev in working_set[:ptr]:
-        try:
-            env.add_revision(rev.id, rev.description, rev.ts, rev.upgrade_sql)
-        except Exception as e:
-            print(e)
-            raise SystemExit('Upgrade failed at revision id={} description={}'.format(rev.id, rev.description))
+        env.add_revision(rev.id, rev.description, rev.ts, rev.upgrade_sql)
     print('Done')
 
 @cli.command(name='rollback')
-@click.option('-n', '--num', help="rollbacks n number applied revisions")
-def rollback(num):
+@click.option('-n', '--num', 'step', default=1, help="rollbacks n number applied revisions")
+@click.option('-r', '--rev', 'rev_id', help="rollbacks to specific revision id")
+def rollback(step, rev_id):
     """
     Downgrades to previous revision by default. 
     """
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
-    count = num or 1
-    while count:
-        env = get_env()
-        migr_ctx = MigrationContext.from_env(env)
-        if migr_ctx.head is None:
-            print("Nothing to do!")
-            return
-        print('Rolling back id={} description={} ...'.format(migr_ctx.head.id, migr_ctx.head.description)) 
-        downgrade_sql = ''
-        for rev in reversed(wd.revisions):
-            if rev.id == migr_ctx.head.id:
-                downgrade_sql = rev.downgrade_sql
+    env = get_env()
+    migr_ctx = MigrationContext.from_env(env)
+    if migr_ctx.head is None:
+        raise SystemExit('Nothing to do!')
+    working_set: List[Revision] = list(filter(lambda rev: datetime.fromisoformat(rev.ts) <= migr_ctx.head.ts, wd.revisions))
+    count = 0
+    buff=[]
+    for rev in reversed(working_set):
+        if rev_id is None and count==step:
+            break
+        if rev_id is not None:
+            if rev.id == rev_id:
+                buff.append(rev)
                 break
-        try:
-            env.remove_revision(migr_ctx.head.id, downgrade_sql)
-        except Exception as e:
-            print(e)
-            raise SystemExit('Rollback failed!')
-        count-=1
+        buff.append(rev)
+        count+=1
+    working_set: List[Revision] = [] + buff
+    for rev in working_set:
+        # insure idempotent
+        if rev.downgrade_sql is None:
+            msg="""
+                Error: No downgrade sql script @{}!
+                """.format(rev.id)
+            if rev.upgrade_sql is not None:
+                msg="""
+                Error: No downgrade sql script @{}, while there is a
+                upgrade sql:
+                {}
+                Scripts should be idempotent.
+                """.format(rev.id, rev.upgrade_sql)
+            raise SystemExit(msg)
+    env.remove_revisions(working_set)
     print('Done')
 
 @cli.command(name='version')

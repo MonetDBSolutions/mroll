@@ -2,6 +2,10 @@ import os
 import configparser
 from datetime import datetime
 
+def gen_rev_id():
+    import uuid
+    return uuid.uuid4().hex[-12:]
+
 class Revision:
     def __init__(self, id_, description, ts, upgrade_sql=None, downgrade_sql=None):
         self.id = id_
@@ -23,9 +27,9 @@ class Revision:
             ts = self.ts.isoformat() if type(self.ts) == datetime else self.ts
             buf.write('-- ts={}\n'.format(ts))
             buf.write('-- migration:upgrade\n')
-            buf.write('{}\n'.format(self.upgrade_sql))
+            buf.write('{}\n'.format(self.upgrade_sql or ''))
             buf.write('-- migration:downgrade\n')
-            buf.write('{}\n'.format(self.downgrade_sql))
+            buf.write('{}\n'.format(self.downgrade_sql or ''))
             res = buf.getvalue()
         return res
 
@@ -71,8 +75,10 @@ class Revision:
             setattr(rev, 'id', id_)
             setattr(rev, 'description', description)
             setattr(rev, 'ts', ts)
-            setattr(rev, 'upgrade_sql', upgrade_sql.strip())
-            setattr(rev, 'downgrade_sql', downgrade_sql.strip())
+            upgrade_sql = upgrade_sql.strip() or None
+            setattr(rev, 'upgrade_sql', upgrade_sql)
+            downgrade_sql = downgrade_sql.strip() or None
+            setattr(rev, 'downgrade_sql', downgrade_sql)
             return rev
 
 
@@ -100,9 +106,8 @@ class MigrationContext:
 class WorkDirectory:
     def __init__(self, path):
         if not os.path.exists(path) and not os.listdir(path):
-            raise RuntimeError('Script directory not initilezed. Run setup command first!')
+            raise RuntimeError('Script directory not initilized. Run setup command first!')
         self.path = path
-        # self.revisions = self.load_revisions(path)
 
     @property
     def config(self):
@@ -110,6 +115,12 @@ class WorkDirectory:
         config = configparser.ConfigParser()
         config.read(configfile)
         return config
+
+    def add_revision(self, rev: Revision):
+        kebab = rev.description.strip().replace(' ', '_')
+        fn = os.path.join(self.path, 'versions', '{}_{}.sql'.format(rev.id, kebab))
+        with open(fn, 'w+') as fw:
+            fw.write(rev.serialize())
 
     def _set_config(self, section, key, value):
         """
