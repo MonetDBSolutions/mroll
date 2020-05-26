@@ -4,7 +4,7 @@ bellow.
 """
 import pymonetdb
 import configparser
-import os
+import os, sys
 from typing import Tuple, List
 from mroll.migration import Revision
 from mroll.exceptions import RevisionOperationError
@@ -69,11 +69,11 @@ def get_revisions(db_name:str=db_name, hostname:str=hostname, port:int=port, use
     finally:
         conn.close()
 
-def add_revision(id_:str, description:str, ts:str, upgrade_sql:str, 
+def add_revisions(revisions: List[Revision], 
     db_name:str=db_name, hostname:str=hostname, port:int=port, 
     username:str=username, password:str=password, tbl_name:str=tbl_name) -> None:
     """
-    Executes upgrade_sql and adds new revision record in a single transaction.
+    Executes upgrade_sql and adds new revision records.
     """
     conn = pymonetdb.connect(db_name, hostname=hostname, port=port, username=username, password=password)
     cur = conn.cursor()
@@ -81,12 +81,13 @@ def add_revision(id_:str, description:str, ts:str, upgrade_sql:str,
     insert into sys."{}" values (%s, %s, %s)
     """.format(tbl_name)
     try:
-        conn.execute(upgrade_sql)
-        cur.execute(sql, (id_, description, ts))
+        for rev in revisions:
+            conn.execute(rev.upgrade_sql)
+            cur.execute(sql, (rev.id, rev.description, rev.ts))
         conn.commit()
     except Exception as e:
         conn.rollback()
-        raise(e)
+        raise RevisionOperationError(rev, repr(e))
     finally:
         conn.close()
 
@@ -106,6 +107,6 @@ def remove_revisions(revisions: List[Revision],
         conn.commit()
     except Exception as e:
         conn.rollback()
-        raise RevisionOperationError(rev, *e.args)
+        raise RevisionOperationError(rev, repr(e))
     finally:
         conn.close()

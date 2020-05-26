@@ -204,26 +204,40 @@ def show(subcmd, options):
     return all_revisions(show_patch=show_patch)
 
 @cli.command(name="upgrade")
-@click.option('-n', '--num', help="run n number of pending revisions")
-def upgrade(num):
+@click.option('-n', '--num', 'step', help="run n number of pending revisions")
+def upgrade(step):
     """
-    Applies all revisions not yet applied in work dir.
-    """
-    # TODO FIX all upgrade sql should be in 1 transacton. 
+    Applies revisions in work dir not yet applied.
+    """ 
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     env = get_env()
     migr_ctx = MigrationContext.from_env(env)
+    # compute working set
     working_set = wd.revisions
     if migr_ctx.head is not None:
-        print('adjusting working set ...')
         def filter_fn(rev):
             return datetime.fromisoformat(rev.ts) > migr_ctx.head.ts
         working_set = list(filter(filter_fn, working_set))
-    ptr = num or len(working_set)
-    # TODO try catch
-    for rev in working_set[:ptr]:
-        env.add_revision(rev.id, rev.description, rev.ts, rev.upgrade_sql)
+    ptr = step or len(working_set)
+    # adjust working set
+    working_set = working_set[:ptr]
+    # ensure idempotency
+    for rev in working_set:
+        if rev.upgrade_sql is None:
+            msg="""
+            Error: No upgrade sql script @{}!
+            """.format(rev.id)
+            if rev.downgrade_sql is not None:
+                msg="""
+                Error: No upgrade sql script @{}, while there is a
+                downgrade sql:
+                {}
+                Scripts should be idempotent.
+                """.format(rev.id, rev.downgrade_sql)
+            raise SystemExit(msg)
+    # execute
+    env.add_revisions(working_set)
     print('Done')
 
 @cli.command(name='rollback')
@@ -252,8 +266,8 @@ def rollback(step, rev_id):
         buff.append(rev)
         count+=1
     working_set: List[Revision] = [] + buff
+     # insure idempotency
     for rev in working_set:
-        # insure idempotent
         if rev.downgrade_sql is None:
             msg="""
                 Error: No downgrade sql script @{}!
