@@ -256,7 +256,7 @@ def upgrade(step):
 
 @cli.command(name='rollback')
 @click.option('-n', '--num', 'step', default=1, help="rollbacks n number applied revisions")
-@click.option('-r', '--rev', 'rev_id', help="rollbacks to specific revision id")
+@click.option('-r', '--rev', 'rev_id', help="rollbacks to specific revision id inclusive")
 def rollback(step, rev_id):
     """
     Downgrades to previous revision by default. 

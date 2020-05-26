@@ -262,3 +262,39 @@ class TestCommands(unittest.TestCase):
         res = runner.invoke(rollback)
         self.assertNotEqual(res.exit_code, 0)
 
+    def test_rollback_to_rev_id(self):
+        migr_ctx = MigrationContext.from_env(get_env())
+        self.assertIsNone(migr_ctx.head)
+        wd = WorkDirectory(self.work_dir)
+        one = gen_rev_id()
+        two = gen_rev_id()
+        three = gen_rev_id()
+        revisions = [
+            Revision(
+                one, "adding table foo", datetime.now(),
+                upgrade_sql="create table test.foo (a string);",
+                downgrade_sql="drop table test.foo;"
+                ),
+            Revision(
+                two, "adding table bar", datetime.now(),
+                upgrade_sql="create table test.bar (a string);",
+                downgrade_sql="drop table test.bar;"
+                ),
+            Revision(
+                three, "add column b foo", datetime.now(),
+                upgrade_sql="alter table test.foo add column b string;",
+                downgrade_sql="alter table test.foo drop column b;"
+                )
+        ]
+        for rev in revisions:
+            wd.add_revision(rev)
+        runner = CliRunner()
+        res = runner.invoke(upgrade)
+        self.assertTrue(res.exit_code==0)
+        migr_ctx = MigrationContext.from_env(get_env())
+        self.assertIsNotNone(migr_ctx.head)
+        self.assertTrue(len(migr_ctx.revisions) == 3)
+        res = runner.invoke(rollback, ['-r', two])
+        self.assertTrue(res.exit_code==0)
+        migr_ctx = MigrationContext.from_env(get_env())
+        self.assertTrue(len(migr_ctx.revisions) == 1)
