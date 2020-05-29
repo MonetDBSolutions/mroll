@@ -123,7 +123,10 @@ def init():
         return print("Nothing to do! Mroll revisions table already exist.")
     except:
         pass
-    env.create_revisions_table()
+    try:
+        env.create_revisions_table()
+    except Exception as e:
+        raise SystemExit(e)
     print('{} table created'.format(env.tbl_name))
     print('Done')
     
@@ -163,7 +166,12 @@ def all_revisions(show_patch=False):
             print(rev)
 
 def applied_revisions(show_patch=False):
-    migr_ctx = MigrationContext.from_env(get_env())
+    # TODO BUG show_patch doesnt show sql text sections
+    config = Config.from_file(MROLL_CONFIG_FILE)
+    wd = WorkDirectory(config.work_dir)
+    env = get_env()
+    migr_ctx = MigrationContext.from_env(env)
+    working_set = wd.revisions
     for r in migr_ctx.revisions:
         if show_patch:
             print(r.serialize())
@@ -251,7 +259,10 @@ def upgrade(step):
                 """.format(rev.id, rev.downgrade_sql)
             raise SystemExit(msg)
     # execute
-    env.add_revisions(working_set)
+    try:
+        env.add_revisions(working_set)
+    except RevisionOperationError as e:
+        raise SystemExit(repr(e))
     print('Done')
 
 @cli.command(name='rollback')
@@ -295,7 +306,10 @@ def rollback(step, rev_id):
                 Scripts should be idempotent.
                 """.format(rev.id, rev.upgrade_sql)
             raise SystemExit(msg)
-    env.remove_revisions(working_set)
+    try:
+        env.remove_revisions(working_set)
+    except RevisionOperationError as e:
+        raise SystemExit(repr(e))
     print('Done')
 
 @cli.command(name='version')
