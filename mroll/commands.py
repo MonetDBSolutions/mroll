@@ -166,17 +166,18 @@ def all_revisions(show_patch=False):
             print(rev)
 
 def applied_revisions(show_patch=False):
-    # TODO BUG show_patch doesnt show sql text sections
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     env = get_env()
     migr_ctx = MigrationContext.from_env(env)
-    working_set = wd.revisions
-    for r in migr_ctx.revisions:
-        if show_patch:
-            print(r.serialize())
-        else:
-            print(r)
+    if migr_ctx.head is None:
+        return
+    for rev in wd.revisions:
+        if datetime.fromisoformat(rev.ts) <= migr_ctx.head.ts:
+            if show_patch:
+                print(rev.serialize())
+            else:
+                print(rev)
 
 def pending_revisions(show_patch=False):
     """
