@@ -45,6 +45,8 @@ class TestMigrationContext(TestCase):
         self.assertEqual(res.ts, '2020-05-04T23:14:37.498799')
         self.assertIsNotNone(res.upgrade_sql)
         self.assertIsNotNone(res.downgrade_sql)
+        self.assertTrue(len(res.upgrade_stmts) > 0)
+        self.assertTrue(len(res.downgrade_stmts) > 0)
 
     def test_serialize(self):
         content="""
