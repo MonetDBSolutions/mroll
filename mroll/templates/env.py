@@ -82,12 +82,13 @@ def add_revisions(revisions: List[Revision],
     """.format(tbl_name)
     try:
         for rev in revisions:
-            conn.execute(rev.upgrade_sql)
+            for stmt in rev.upgrade_stmts:
+                conn.execute(stmt)
             cur.execute(sql, (rev.id, rev.description, rev.ts))
         conn.commit()
     except Exception as e:
         conn.rollback()
-        raise RevisionOperationError(rev, repr(e))
+        raise RevisionOperationError(rev, stmt, repr(e))
     finally:
         conn.close()
 
@@ -102,11 +103,12 @@ def remove_revisions(revisions: List[Revision],
     sql = """delete from sys."{}" where id=%s""".format(tbl_name)
     try:
         for rev in revisions:
-            conn.execute(rev.downgrade_sql)
+            for stmt in rev.downgrade_stmts:
+                conn.execute(stmt)
             cur.execute(sql, (rev.id,))
         conn.commit()
     except Exception as e:
         conn.rollback()
-        raise RevisionOperationError(rev, repr(e))
+        raise RevisionOperationError(rev, stmt, repr(e))
     finally:
         conn.close()

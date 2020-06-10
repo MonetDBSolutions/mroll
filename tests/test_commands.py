@@ -91,7 +91,7 @@ class TestCommands(unittest.TestCase):
             Revision(
                 gen_rev_id(), "adding table bar", datetime.now(),
                 upgrade_sql="create table test.bar (a string);",
-                downgrade_sql="drop table test.bar"
+                downgrade_sql="drop table test.bar;"
             )
         )
         self.assertTrue(len(wd.revisions) == 1)
@@ -192,13 +192,12 @@ class TestCommands(unittest.TestCase):
         migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNone(migr_ctx.head)
         wd = WorkDirectory(self.work_dir)
-        wd.add_revision(
-            Revision(
+        rev=Revision(
                 gen_rev_id(), "adding table foo", datetime.now(),
                 upgrade_sql="create table test.foo (a string);",
                 downgrade_sql="drop table test.foo;"
                 )
-        )
+        wd.add_revision(rev)
         self.assertTrue(len(wd.revisions) == 1)
         runner = CliRunner()
         res = runner.invoke(upgrade)

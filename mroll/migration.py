@@ -2,6 +2,7 @@ import os
 from configparser import ConfigParser
 from datetime import datetime
 from mroll.exceptions import InvalidWorkDirError
+import sqlparse
 
 def gen_rev_id():
     import uuid
@@ -14,6 +15,8 @@ class Revision:
         self.ts = ts
         self.upgrade_sql = upgrade_sql
         self.downgrade_sql = downgrade_sql
+        self.upgrade_stmts = sqlparse.split(upgrade_sql) if upgrade_sql else []
+        self.downgrade_stmts = sqlparse.split(downgrade_sql) if downgrade_sql else []
 
     def __repr__(self):
         return "<Revision id={} description={}>".format(self.id, self.description)
@@ -77,9 +80,13 @@ class Revision:
             setattr(rev, 'description', description)
             setattr(rev, 'ts', ts)
             upgrade_sql = upgrade_sql.strip() or None
+            upgrade_stmts = sqlparse.split(upgrade_sql) if upgrade_sql else []
             setattr(rev, 'upgrade_sql', upgrade_sql)
+            setattr(rev, 'upgrade_stmts', upgrade_stmts)
             downgrade_sql = downgrade_sql.strip() or None
+            downgrade_stmts = sqlparse.split(downgrade_sql) if downgrade_sql else []
             setattr(rev, 'downgrade_sql', downgrade_sql)
+            setattr(rev, 'downgrade_stmts', downgrade_stmts)
             return rev
 
 

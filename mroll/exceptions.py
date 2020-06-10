@@ -2,20 +2,17 @@
 Mroll specific exceptions
 """
 class RevisionOperationError(Exception):
-    def __init__(self, rev, extra_info:str=None, *args):
+    def __init__(self, rev, stmt, *args):
         super(Exception, self).__init__(*args)
         self.revision = rev
-        self.extra_info = extra_info
+        self.stmt = stmt
 
     def __repr__(self):
-        rev = self.revision
-        return """Error: @{}:
+        return """Error: revision id={}
         {}
-        ------->
+        ===========
         {}
-        <-------
-        {}
-        """.format(rev.id, rev.upgrade_sql, rev.downgrade_sql, self.extra_info)
+        """.format(self.revision.id, self.stmt, self.args)
 
 class InvalidWorkDirError(Exception):
     """
