@@ -8,6 +8,47 @@ from typing import Tuple, List
 from mroll.migration import Revision
 from mroll.exceptions import RevisionOperationError
 
+
+# TODO evrrything goes through migration context where module eg mdb/monetdb is specific databas
+# module. inIt through config file aka mroll ini.
+
+
+
+class MigrationContext:
+    """
+    Implements migrations context interface
+    """
+    def __init__(self, head=None, revisions=[]):
+        # TODO init the rev tbl here
+        self.head = head
+        self.revisions = revisions
+
+    def create_revisions_tbl(self):
+        # self.plugin.create_revison table
+        pass
+
+    @property
+    def head(self):
+        return self.head
+
+    @property
+    def revisions(self):
+        return self.revisions
+
+    def add_revisions(self, revisions: List[Revision]):
+        pass
+
+    def remove_revisions(self, revisions: List[Revision]):
+        pass
+
+    def __repr__(self):
+        return "<MigrationContext head={} revisions={}>".format(self.head, self.revisions)
+
+    @classmethod
+    def from_conf(cls, env):
+        # TODO pass the mroll.ini
+        pass
+
 REVISION_RECORD = Tuple[str, str, str]
 
 def get_head(
