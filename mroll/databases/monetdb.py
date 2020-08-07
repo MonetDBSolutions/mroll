@@ -5,49 +5,84 @@ import pymonetdb
 import configparser
 import os, sys
 from typing import Tuple, List
-from mroll.migration import Revision
+from mroll.migration import Revision, MigrationContext, MigrationCtxConfig
 from mroll.exceptions import RevisionOperationError
 
-
-# TODO evrrything goes through migration context where module eg mdb/monetdb is specific databas
-# module. inIt through config file aka mroll ini.
-
-
-
-class MigrationContext:
+class MonetMigrCtx(MigrationContext):
     """
-    Implements migrations context interface
+    Monetdb specific implementation of Migration Context
     """
-    def __init__(self, head=None, revisions=[]):
-        # TODO init the rev tbl here
-        self.head = head
-        self.revisions = revisions
+    def __init__(self, config: MigrationCtxConfig):
+        assert config.db_name
+        assert config.username
+        assert config.password
+        assert config.tbl_name
+        assert config.hostname
+        assert config.port
+        self.config = config
 
-    def create_revisions_tbl(self):
-        # self.plugin.create_revison table
-        pass
+    def create_revisions_tbl(self) -> None:
+        config = self.config
+        return create_revisions_table(
+            config.db_name,
+            tbl_name=config.tbl_name,
+            hostname=config.hostname,
+            port=config.port,
+            username=config.username,
+            password=config.password)
 
     @property
-    def head(self):
-        return self.head
+    def head(self) -> Revision:
+        config = self.config
+        head = get_head(
+            config.db_name,
+            tbl_name=config.tbl_name,
+            hostname=config.hostname,
+            port=config.port,
+            username=config.username,
+            password=config.password)
+        if head is not None:
+            id_, description, ts = head
+            return Revision(id_, description, ts)
+        return head
 
     @property
-    def revisions(self):
-        return self.revisions
+    def revisions(self) -> List[Revision]:
+        config = self.config
+        revisions = get_revisions(
+            config.db_name,
+            tbl_name=config.tbl_name,
+            hostname=config.hostname,
+            port=config.port,
+            username=config.username,
+            password=config.password)
+        return [Revision(id_, description, ts) for id_, description, ts in revisions]
 
-    def add_revisions(self, revisions: List[Revision]):
-        pass
+    def add_revisions(self, revisions: List[Revision]) -> None:
+        config = self.config
+        return add_revisions(
+            revisions,
+            config.db_name,
+            tbl_name=config.tbl_name,
+            hostname=config.hostname,
+            port=config.port,
+            username=config.username,
+            password=config.password)
 
-    def remove_revisions(self, revisions: List[Revision]):
-        pass
+    def remove_revisions(self, revisions: List[Revision]) -> None:
+        config = self.config
+        return remove_revisions(
+            revisions,
+            config.db_name,
+            tbl_name=config.tbl_name,
+            hostname=config.hostname,
+            port=config.port,
+            username=config.username,
+            password=config.password)
 
     def __repr__(self):
-        return "<MigrationContext head={} revisions={}>".format(self.head, self.revisions)
+        return "<MonetMigrCtx head={} revisions={}>".format(self.head, self.revisions)
 
-    @classmethod
-    def from_conf(cls, env):
-        # TODO pass the mroll.ini
-        pass
 
 REVISION_RECORD = Tuple[str, str, str]
 

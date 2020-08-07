@@ -22,6 +22,7 @@ def get_templates_dir():
     dir_ = os.path.dirname(__file__)
     return os.path.join(dir_, 'templates')
 
+# TODO this will not be needed anymore 
 def get_env():
     config = Config.from_file(MROLL_CONFIG_FILE)
     path = os.path.join(config.work_dir, 'env.py')
@@ -29,6 +30,9 @@ def get_env():
     return env
 
 def gen_rev_id():
+    """
+    rev id generator
+    """
     import uuid
     return uuid.uuid4().hex[-12:]
 
@@ -44,6 +48,7 @@ def ensure_setup():
 
 def ensure_init():
     ensure_setup()
+    # TODO do this through Migrartion context, no more env
     env = get_env()
     try:
         env.get_head()
@@ -72,6 +77,7 @@ def setup(dir_, path):
     os.mkdir(versions)
     tmpl_dir = get_templates_dir()
     shutil.copy(os.path.join(tmpl_dir, 'mroll.ini'), directory)
+    # TODO remove:w
     shutil.copy(os.path.join(tmpl_dir, 'env.py'), directory)
     #  setup config file
     if not os.path.exists(SYS_CONFIG):

@@ -1,14 +1,15 @@
-from . import monetdb
+from .monetdb import MonetMigrCtx
+from mroll.migration import MigrationContext
 
 __all__ = (
     'create_migration_ctx'
 )
 
-def create_migration_ctx(config, database='monetdb'):
+def create_migration_ctx(config, database='monetdb') -> MigrationContext:
     """
-    Factory method to create specific database context
+    Factory method to create specific database engine context.
+    Defaults to monetdb.
     """
     if database == 'monetdb':
-        from .monetdb import MigrationContext
-        return MigrationContext.from_conf(config)
+        return MonetMigrCtx(config)
         
