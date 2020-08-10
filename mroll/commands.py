@@ -10,24 +10,11 @@ import importlib.machinery
 from mroll.config import *
 from mroll.migration import Revision, MigrationContext, WorkDirectory
 from mroll.exceptions import RevisionOperationError
-
-
-def load_module_py(module_id, path):
-    spec = importlib.util.spec_from_file_location(module_id, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+from mroll.databases import create_migration_ctx
 
 def get_templates_dir():
     dir_ = os.path.dirname(__file__)
     return os.path.join(dir_, 'templates')
-
-# TODO this will not be needed anymore 
-def get_env():
-    config = Config.from_file(MROLL_CONFIG_FILE)
-    path = os.path.join(config.work_dir, 'env.py')
-    env = load_module_py('env', path)
-    return env
 
 def gen_rev_id():
     """
@@ -48,10 +35,11 @@ def ensure_setup():
 
 def ensure_init():
     ensure_setup()
-    # TODO do this through Migrartion context, no more env
-    env = get_env()
+    config = Config.from_file(MROLL_CONFIG_FILE)
+    wd = WorkDirectory(config.work_dir)
     try:
-        env.get_head()
+        ctx = create_migration_ctx(wd.get_migration_ctx_config())
+        head = ctx.head
     except:
         raise SystemExit("Error: mroll not initialized! Run init command first.")
 
@@ -71,14 +59,12 @@ def setup(dir_, path):
     """
     directory = path or os.path.join(os.getcwd(), dir_)
     if os.access(directory, os.F_OK) and os.listdir(directory):
-        raise ValueError("Directory %s already exists and is not empty" % directory)
+        raise SystemExit("Error: Directory %s already exists and it is not empty" % directory)
     versions = os.path.join(directory, 'versions')
     os.mkdir(directory)
     os.mkdir(versions)
     tmpl_dir = get_templates_dir()
     shutil.copy(os.path.join(tmpl_dir, 'mroll.ini'), directory)
-    # TODO remove:w
-    shutil.copy(os.path.join(tmpl_dir, 'env.py'), directory)
     #  setup config file
     if not os.path.exists(SYS_CONFIG):
         os.mkdir(SYS_CONFIG)
@@ -101,7 +87,7 @@ def config(path):
     dir_list = os.listdir(directory)
     check = ('mroll.ini' in dir_list) and ('versions' in dir_list)
     if not check:
-        raise ValueError("specified path {} is not valid mroll working directory!")
+        raise SystemExit("Error: specified path '{}' is not a valid mroll working directory!".format(path))
     #  setup config file
     if not os.path.exists(SYS_CONFIG):
         os.mkdir(SYS_CONFIG)
@@ -122,18 +108,19 @@ def init():
     ensure_setup()
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
-    env = get_env()
+    migr_ctx_config = wd.get_migration_ctx_config()
+    migr_ctx = create_migration_ctx(migr_ctx_config)
     try:
         # if following succeeds then mroll revisons tbl exist.
-        env.get_head()
+        migr_ctx.head
         return print("Nothing to do! Mroll revisions table already exist.")
     except:
         pass
     try:
-        env.create_revisions_table()
+        migr_ctx.create_revisions_tbl()
     except Exception as e:
         raise SystemExit(e)
-    print('{} table created'.format(env.tbl_name))
+    print('{} table created'.format(migr_ctx_config.tbl_name))
     print('Done')
     
 @cli.command(name='revision')
@@ -174,8 +161,7 @@ def all_revisions(show_patch=False):
 def applied_revisions(show_patch=False):
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
-    env = get_env()
-    migr_ctx = MigrationContext.from_env(env)
+    migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     if migr_ctx.head is None:
         return
     for rev in wd.revisions:
@@ -191,8 +177,7 @@ def pending_revisions(show_patch=False):
     """
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
-    env = get_env()
-    migr_ctx = MigrationContext.from_env(env)
+    migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     working_set = wd.revisions
     if migr_ctx.head is not None:
         def filter_fn(rev):
@@ -240,8 +225,7 @@ def upgrade(step):
     ensure_init()
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
-    env = get_env()
-    migr_ctx = MigrationContext.from_env(env)
+    migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     # compute working set
     working_set = wd.revisions
     if migr_ctx.head is not None:
@@ -267,7 +251,7 @@ def upgrade(step):
             raise SystemExit(msg)
     # execute
     try:
-        env.add_revisions(working_set)
+        migr_ctx.add_revisions(working_set)
     except RevisionOperationError as e:
         raise SystemExit(repr(e))
     print('Done')
@@ -282,8 +266,7 @@ def rollback(step, rev_id):
     ensure_init()
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
-    env = get_env()
-    migr_ctx = MigrationContext.from_env(env)
+    migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     if migr_ctx.head is None:
         raise SystemExit('Nothing to do!')
     working_set: List[Revision] = list(filter(lambda rev: datetime.fromisoformat(rev.ts) <= migr_ctx.head.ts, wd.revisions))
@@ -314,7 +297,7 @@ def rollback(step, rev_id):
                 """.format(rev.id, rev.upgrade_sql)
             raise SystemExit(msg)
     try:
-        env.remove_revisions(working_set)
+        migr_ctx.remove_revisions(working_set)
     except RevisionOperationError as e:
         raise SystemExit(repr(e))
     print('Done')

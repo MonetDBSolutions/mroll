@@ -93,15 +93,12 @@ def get_head(
     """
     Returns last revision
     """
-    rev = None
     conn = pymonetdb.connect(db_name, hostname=hostname, port=port, username=username, password=password)
-    try:
-        sql = """select id, description, ts from sys."{}" as r where r.ts=(select max(ts) from sys."{}")""".format(tbl_name, tbl_name)
-        curr = conn.cursor()
-        curr.execute(sql)
-        rev = curr.fetchone()
-    finally:
-        conn.close() 
+    sql = """select id, description, ts from sys."{}" as r where r.ts=(select max(ts) from sys."{}")""".format(tbl_name, tbl_name)
+    curr = conn.cursor()
+    curr.execute(sql)
+    rev = curr.fetchone()
+    conn.close() 
     return rev
 
 def create_revisions_table(
@@ -135,11 +132,11 @@ def get_revisions(
     conn = pymonetdb.connect(db_name, hostname=hostname, port=port, username=username, password=password)
     sql = """select id, description, ts from sys."{}" order by ts""".format(tbl_name)
     cur = conn.cursor()
-    try:
-        cur.execute(sql)
-        return cur.fetchall()
-    finally:
-        conn.close()
+    cur.execute(sql)
+    res = cur.fetchall()
+    conn.close()
+    return res
+        
 
 def add_revisions(revisions: List[Revision], 
     db_name, tbl_name:str='mroll_revisions', 
