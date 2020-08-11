@@ -3,6 +3,8 @@ from configparser import ConfigParser
 from datetime import datetime
 from mroll.exceptions import InvalidWorkDirError
 import sqlparse
+from  abc  import  ABCMeta,  abstractmethod
+from typing import Tuple, List
 
 def gen_rev_id():
     import uuid
@@ -89,26 +91,63 @@ class Revision:
             setattr(rev, 'downgrade_stmts', downgrade_stmts)
             return rev
 
-
-class MigrationContext:
-    def __init__(self, head=None, revisions=[]):
-        self.head = head
-        self.revisions = revisions
+class MigrationCtxConfig:
+    db_name = None
+    username = None
+    password = None
+    hostname = None
+    port = None
+    tbl_name = None
 
     def __repr__(self):
-        return "<MigrationContext head={} revisions={}>".format(self.head, self.revisions)
+        return "<MigrationCtxConfig db_name={} tbl_name={}>".format(self.db_name, self.tbl_name)
 
-    @classmethod
-    def from_env(cls, env):
-        head = env.get_head()
-        if head is not None:
-            id_, description, ts = head
-            head = Revision(id_, description, ts)
-        revisions = [Revision(id_, description, ts) for id_, description, ts in env.get_revisions()]
-        mc = cls.__new__(cls)
-        mc.head = head
-        mc.revisions = revisions
-        return mc
+class MigrationContext(metaclass=ABCMeta):
+    """
+    Migrations Context Interface
+    """
+
+    @abstractmethod
+    def create_revisions_tbl(self):
+        pass
+
+    @property
+    @abstractmethod
+    def head(self) -> Revision:
+        pass
+
+    @property
+    @abstractmethod
+    def revisions(self) -> List[Revision]:
+        pass
+
+    @abstractmethod
+    def add_revisions(self, revisions: List[Revision]):
+        pass
+
+    @abstractmethod
+    def remove_revisions(self, revisions: List[Revision]):
+        pass
+
+# class MigrationContext:
+#     def __init__(self, head=None, revisions=[]):
+#         self.head = head
+#         self.revisions = revisions
+
+#     def __repr__(self):
+#         return "<MigrationContext head={} revisions={}>".format(self.head, self.revisions)
+
+#     @classmethod
+#     def from_env(cls, env):
+#         head = env.get_head()
+#         if head is not None:
+#             id_, description, ts = head
+#             head = Revision(id_, description, ts)
+#         revisions = [Revision(id_, description, ts) for id_, description, ts in env.get_revisions()]
+#         mc = cls.__new__(cls)
+#         mc.head = head
+#         mc.revisions = revisions
+#         return mc
 
 class WorkDirectory:
     def __init__(self, path):
@@ -119,11 +158,22 @@ class WorkDirectory:
         self.path = path
 
     @property
-    def config(self):
+    def config(self) -> MigrationCtxConfig:
         configfile = os.path.join(self.path, 'mroll.ini')
         config = ConfigParser()
         config.read(configfile)
         return config
+
+    def get_migration_ctx_config(self):
+        config = self.config
+        ctx_config = MigrationCtxConfig()
+        sections = config.sections()
+        for sec in sections:
+            options = config.options(sec)
+            for opt in options:
+                setattr(ctx_config, opt, config.get(sec, opt))
+        ctx_config.tbl_name = ctx_config.rev_history_tbl_name
+        return ctx_config
 
     def add_revision(self, rev: Revision):
         kebab = rev.description.strip().replace(' ', '_')

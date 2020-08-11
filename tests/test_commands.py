@@ -9,6 +9,7 @@ from mroll import __version__
 from mroll.commands import *
 from mroll.migration import Revision, gen_rev_id
 from mroll.config import MROLL_CONFIG_DIR
+from mroll.databases import create_migration_ctx
 
 def test_version():
     assert __version__ == '0.1.0'
@@ -24,7 +25,7 @@ class TestCommands(unittest.TestCase):
         self.set_config_db_name(self.db_name)
         self.init_res = self.run_init_cmd()
         conn = pymonetdb.connect(self.db_name)
-        conn.execute('create schema test;')
+        conn.execute('create schema if not exists test;')
         conn.commit()
         
     def tearDown(self):
@@ -98,13 +99,12 @@ class TestCommands(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(upgrade)
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
+        migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 1)
         self.add_rev_cmd('add column a to bar')
         self.add_rev_cmd('add column a to baz')
         self.assertTrue(len(wd.revisions) == 3)
-        wd = WorkDirectory(self.work_dir)
         res = runner.invoke(show, ['pending'])
         self.assertTrue(res.exit_code==0)
 
@@ -127,8 +127,8 @@ class TestCommands(unittest.TestCase):
         
     def test_upgrade_default_cmd(self):
         #  Test upgrade with no options
-        migr_ctx = MigrationContext.from_env(get_env())
         wd = WorkDirectory(self.work_dir)
+        migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
         revisions = [
             Revision(
                 gen_rev_id(), "adding table foo", datetime.now(),
@@ -147,13 +147,11 @@ class TestCommands(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(upgrade)
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 2)
 
     def test_upgrade_num_command(self):
         # Test upgrade cmd with a step 
-        migr_ctx = MigrationContext.from_env(get_env())
         wd = WorkDirectory(self.work_dir)
         revisions = [
             Revision(
@@ -173,14 +171,14 @@ class TestCommands(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(upgrade, ['-n', 1])
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
+        migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 1)
 
     def test_upgrade_raise(self):
-        migr_ctx = MigrationContext.from_env(get_env())
-        self.assertIsNone(migr_ctx.head)
         wd = WorkDirectory(self.work_dir)
+        migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
+        self.assertIsNone(migr_ctx.head)
         wd.add_revision(Revision(gen_rev_id(), "adding table foo", datetime.now()))
         self.assertTrue(len(wd.revisions) == 1)
         runner = CliRunner()
@@ -189,9 +187,9 @@ class TestCommands(unittest.TestCase):
 
     def test_rollback_default_cmd(self):
         # test rollback no cli options
-        migr_ctx = MigrationContext.from_env(get_env())
-        self.assertIsNone(migr_ctx.head)
         wd = WorkDirectory(self.work_dir)
+        migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
+        self.assertIsNone(migr_ctx.head)
         rev=Revision(
                 gen_rev_id(), "adding table foo", datetime.now(),
                 upgrade_sql="create table test.foo (a string);",
@@ -202,19 +200,17 @@ class TestCommands(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(upgrade)
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 1)
         res = runner.invoke(rollback)
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 0)
 
     def test_rollback_step_cmd(self):
-        migr_ctx = MigrationContext.from_env(get_env())
-        self.assertIsNone(migr_ctx.head)
         wd = WorkDirectory(self.work_dir)
+        migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
+        self.assertIsNone(migr_ctx.head)
         runner = CliRunner()
         wd.add_revision(
             Revision(
@@ -234,17 +230,15 @@ class TestCommands(unittest.TestCase):
         )
         res = runner.invoke(upgrade)
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 2)
         res = runner.invoke(rollback, ['-n', 2])
-        migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNone(migr_ctx.head)
 
     def test_rollback_raises(self):
-        migr_ctx = MigrationContext.from_env(get_env())
-        self.assertIsNone(migr_ctx.head)
         wd = WorkDirectory(self.work_dir)
+        migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
+        self.assertIsNone(migr_ctx.head)
         runner = CliRunner()
         # add revison with no downgrade_sql
         wd.add_revision(
@@ -255,16 +249,15 @@ class TestCommands(unittest.TestCase):
         )
         res = runner.invoke(upgrade)
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 1)
         res = runner.invoke(rollback)
         self.assertNotEqual(res.exit_code, 0)
 
     def test_rollback_to_rev_id(self):
-        migr_ctx = MigrationContext.from_env(get_env())
-        self.assertIsNone(migr_ctx.head)
         wd = WorkDirectory(self.work_dir)
+        migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
+        self.assertIsNone(migr_ctx.head)
         one = gen_rev_id()
         two = gen_rev_id()
         three = gen_rev_id()
@@ -290,10 +283,8 @@ class TestCommands(unittest.TestCase):
         runner = CliRunner()
         res = runner.invoke(upgrade)
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 3)
         res = runner.invoke(rollback, ['-r', two])
         self.assertTrue(res.exit_code==0)
-        migr_ctx = MigrationContext.from_env(get_env())
         self.assertTrue(len(migr_ctx.revisions) == 1)
