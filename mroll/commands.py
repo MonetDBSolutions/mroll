@@ -163,13 +163,18 @@ def applied_revisions(show_patch=False):
     wd = WorkDirectory(config.work_dir)
     migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     if migr_ctx.head is None:
+        print('No revisions have being applied yet!')
         return
-    for rev in wd.revisions:
-        if datetime.fromisoformat(rev.ts) <= migr_ctx.head.ts:
-            if show_patch:
-                print(rev.serialize())
-            else:
-                print(rev)
+    # create lookup
+    lookup = {}
+    for r in migr_ctx.revisions:
+        lookup[r.id] = r
+    working_set: List[Revision] = list(filter(lambda rev: lookup.get(rev.id, None) is not None, wd.revisions))
+    for rev in working_set:
+        if show_patch:
+            print(rev.serialize())
+        else:
+            print(rev)
 
 def pending_revisions(show_patch=False):
     """
@@ -178,11 +183,11 @@ def pending_revisions(show_patch=False):
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
-    working_set = wd.revisions
-    if migr_ctx.head is not None:
-        def filter_fn(rev):
-            return datetime.fromisoformat(rev.ts) > migr_ctx.head.ts
-        working_set = list(filter(filter_fn, working_set))
+    # create lookup
+    lookup = {}
+    for r in migr_ctx.revisions:
+        lookup[r.id] = r
+    working_set: List[Revision] = list(filter(lambda rev: lookup.get(rev.id, None) is None, wd.revisions))
     for r in working_set:
         if show_patch:
             print(r.serialize())
@@ -226,12 +231,11 @@ def upgrade(step):
     config = Config.from_file(MROLL_CONFIG_FILE)
     wd = WorkDirectory(config.work_dir)
     migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
-    # compute working set
-    working_set = wd.revisions
-    if migr_ctx.head is not None:
-        def filter_fn(rev):
-            return datetime.fromisoformat(rev.ts) > migr_ctx.head.ts
-        working_set = list(filter(filter_fn, working_set))
+    # create lookup
+    lookup = {}
+    for r in migr_ctx.revisions:
+        lookup[r.id] = r
+    working_set: List[Revision] = list(filter(lambda rev: lookup.get(rev.id, None) is None, wd.revisions))
     ptr = step or len(working_set)
     # adjust working set
     working_set = working_set[:ptr]
@@ -269,7 +273,11 @@ def rollback(step, rev_id):
     migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     if migr_ctx.head is None:
         raise SystemExit('Nothing to do!')
-    working_set: List[Revision] = list(filter(lambda rev: datetime.fromisoformat(rev.ts) <= migr_ctx.head.ts, wd.revisions))
+    # create lookup
+    lookup = {}
+    for r in migr_ctx.revisions:
+        lookup[r.id] = r
+    working_set: List[Revision] = list(filter(lambda rev: lookup.get(rev.id, None) is not None, wd.revisions))
     count = 0
     buff=[]
     for rev in reversed(working_set):
