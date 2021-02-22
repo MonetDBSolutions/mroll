@@ -7,3 +7,4 @@
 .tox
 .pytest_cache
 dist
+dbfarm
