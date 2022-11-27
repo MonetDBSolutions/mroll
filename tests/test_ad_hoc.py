@@ -11,10 +11,10 @@ from mroll.commands import *
 class TestAdHoc(unittest.TestCase):
     def setUp(self):
         self.work_dir = mkdtemp()
+        data_dir = Path(__file__).parent / "data"
+        shutil.copy2(data_dir, self.work_dir)
         self.work_path = Path(self.work_dir)
-        v = self.work_path / 'versions'
-        v.mkdir()  # create versions directory
-        self.db_name = os.environ.get('TEST_DB_NAME', 'mroll_test_db')
+        self.db_name = 'mroll_test_db'
 
     def tearDown(self):
         if os.path.exists(self.work_dir):
@@ -26,3 +26,6 @@ class TestAdHoc(unittest.TestCase):
         self.assertEqual(r.exit_code, 0)   # mroll revision ran correctly
         ln = list(self.work_path.rglob('*test-revision*'))
         self.assertEqual(len(ln), 1)   # it created one file that matches the glob *test-revision*
+
+    def test_history(self):
+        pass
