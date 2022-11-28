@@ -4,5 +4,9 @@
 -- ts=2022-11-25T18:25:16.940894
 -- migration:upgrade
 
+create table test.revision0 (i int);
+insert into test.revision0 values (1), (2);
+
 -- migration:downgrade
 
+drop table test.revision0;
