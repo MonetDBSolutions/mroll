@@ -45,7 +45,7 @@ def ensure_init():
 
 # ----------------------------------
 
-@click.group(chain=True)
+@click.group()
 @click.pass_context
 def cli(ctx):
     ctx.ensure_object(dict)
@@ -213,34 +213,36 @@ def pending_revisions(show_patch=False, mdir=None):
         else:
             print(r)
 
-@cli.command(name="show")
-@click.argument('subcmd', nargs=1)
-@click.argument('options', required=False)
+@cli.group(name="show")
+def show():
+    pass
+
+@show.command(name="all")
+@click.option('-p', '--patch', is_flag=True)
 @click.option('-d', '--dir', 'mdir', help="the migrations directory")
-def show(subcmd, options, mdir):
-    """
-    Shows revisions information.\n
-    mroll show [ all | pending | applied ] [-p|--patch]
-    """
+def all(patch, mdir):
     if not mdir:
         ensure_init()
-    def usage(err_msg: str):
-        res ="Error: {}\n".format(err_msg) if err_msg else ''
-        res += 'Usage:\n'
-        res+='mroll show [pending|applied|all] [-p|--patch]\n'
-        return res
-    show_patch = False
-    if subcmd not in ['all', 'pending', 'applied']:
-        raise SystemExit(usage("Invalid subcommand!"))
-    if options:
-        if options not in ['-p', '--p']:
-            raise SystemExit(usage("Invalid subcommand option!"))
-        show_patch = True 
-    if subcmd == 'pending':
-        return pending_revisions(show_patch=show_patch, mdir=mdir)
-    if subcmd == 'applied':
-        return applied_revisions(show_patch=show_patch, mdir=mdir)
-    return all_revisions(show_patch=show_patch, mdir=mdir)
+
+    return all_revisions(show_patch=patch, mdir=mdir)
+
+@show.command(name="pending")
+@click.option('-p', '--patch', is_flag=True)
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def pending(patch, mdir):
+    if not mdir:
+        ensure_init()
+
+    return pending_revisions(show_patch=patch, mdir=mdir)
+
+@show.command(name="applied")
+@click.option('-p', '--patch', is_flag=True)
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def applied(patch, mdir):
+    if not mdir:
+        ensure_init()
+
+    return applied_revisions(show_patch=patch, mdir=mdir)
 
 @cli.command(name="upgrade")
 @click.option('-n', '--num', 'step', help="run n number of pending revisions")
