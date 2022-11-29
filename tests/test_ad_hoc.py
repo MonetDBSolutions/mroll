@@ -19,20 +19,33 @@ from mroll.commands import *
 # `migrations` directory is not empty.
 
 class TestAdHoc(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.db_name = 'mroll_test_db'
+        cls.connection = pymonetdb.connect(cls.db_name, autocommit=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.connection.close()
+
     def setUp(self):
         self.work_dir = mkdtemp()
         data_dir = Path(__file__).parent / "data"
         shutil.copytree(data_dir, self.work_dir, dirs_exist_ok=True)
         self.work_path = Path(self.work_dir)
-        self.db_name = 'mroll_test_db'
-        conn = pymonetdb.connect(self.db_name)
-        conn.execute("create schema if not exists test")
-        conn.execute("create table if not exists sys.mroll_revisions(id string primary key, description string, ts timestamp)")
-        conn.commit()
+
+
+        self.connection.execute("create schema if not exists test")
+        self.connection.execute("create table if not exists sys.mroll_revisions(id string primary key, description string, ts timestamp)")
+
 
     def tearDown(self):
         if os.path.exists(self.work_dir):
             shutil.rmtree(self.work_dir)
+
+        self.connection.execute("drop table sys.mroll_revisions;")
+        self.connection.execute("drop schema test cascade;")
+
 
     def test_revision(self):
         runner = CliRunner()
@@ -48,11 +61,10 @@ class TestAdHoc(unittest.TestCase):
 
         # make sure that the SQL commands in the revision had an
         # effect.
-        conn = pymonetdb.connect(self.db_name)
-        cur = conn.cursor()
-        cur.execute("select * from test.revision0")
-        r = cur.fetchall()
-        self.assertEqual(len(r), 2)
+
+        cur = self.connection.cursor()
+        r = cur.execute("select * from test.revision0")
+        self.assertEqual(r, 2)
 
     def test_history(self):
         runner = CliRunner()
@@ -63,3 +75,50 @@ class TestAdHoc(unittest.TestCase):
         # count the lines in the output
         self.assertEqual(res.output.count("\n"), 1)
         self.assertTrue("test revision 0" in res.output)
+
+    def test_show_pending(self):
+        runner = CliRunner()
+        res = runner.invoke(pending, ['-d', self.work_path])
+        self.assertEqual(res.exit_code, 0)
+        self.assertEqual(res.output.count("\n"), 1)
+        self.assertTrue("test revision 0" in res.output)
+
+    def test_show_all(self):
+        runner = CliRunner()
+        res = runner.invoke(upgrade, ['-d', self.work_path])
+        self.assertEqual(res.exit_code, 0)
+        res = runner.invoke(revision, ['-m', 'test revision 1', '-d', self.work_dir])
+        self.assertEqual(res.exit_code, 0)
+        res = runner.invoke(all, ['-d', self.work_dir])
+        self.assertEqual(res.exit_code, 0)
+        # count the lines in the output
+        self.assertEqual(res.output.count("\n"), 2)
+        self.assertTrue("test revision 0" in res.output)
+        self.assertTrue("test revision 1" in res.output)
+
+    def test_show_applied(self):
+        runner = CliRunner()
+        res = runner.invoke(upgrade, ['-d', self.work_path])
+        self.assertEqual(res.exit_code, 0)
+        res = runner.invoke(revision, ['-m', 'test revision 1', '-d', self.work_dir])
+        self.assertEqual(res.exit_code, 0)
+        res = runner.invoke(applied, ['-d', self.work_dir])
+        self.assertEqual(res.exit_code, 0)
+        self.assertEqual(res.output.count("\n"), 1)
+        self.assertTrue("test revision 0" in res.output)
+        self.assertTrue("test revision 1" not in res.output)
+
+    def test_rollback(self):
+        runner = CliRunner()
+        res = runner.invoke(upgrade, ['-d', self.work_path])
+        self.assertEqual(res.exit_code, 0)
+
+        # make sure that the upgrade ran
+        cur = self.connection.cursor()
+        r = cur.execute("select * from test.revision0;")
+        self.assertEqual(r, 2)
+
+        res = runner.invoke(rollback, ['-d', self.work_path])
+        cur = self.connection.cursor()
+        r = cur.execute("select * from sys.mroll_revisions;")
+        self.assertEqual(r, 0)
