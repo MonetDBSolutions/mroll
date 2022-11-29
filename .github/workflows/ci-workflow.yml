@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v2
@@ -26,8 +26,9 @@ jobs:
     - name: set monetdb
       run: |
         # install monetdb
-        sudo sh -c "echo 'deb http://dev.monetdb.org/downloads/deb/ bionic monetdb' > /etc/apt/sources.list.d/monetdb.list"
-        sudo sh -c "echo 'deb-src https://dev.monetdb.org/downloads/deb/ bionic monetdb' >> /etc/apt/sources.list.d/monetdb.list"
+        export lsbrelease=$(lsb_release -cs)
+        sudo sh -c "echo 'deb http://dev.monetdb.org/downloads/deb/ ${lsbrelease} monetdb' > /etc/apt/sources.list.d/monetdb.list"
+        sudo sh -c "echo 'deb-src https://dev.monetdb.org/downloads/deb/ ${lsbrelease} monetdb' >> /etc/apt/sources.list.d/monetdb.list"
         wget --output-document=- http://dev.monetdb.org/downloads/MonetDB-GPG-KEY | sudo apt-key add -
         sudo apt-get update -q
         sudo apt-get install -qy monetdb5-sql monetdb-client

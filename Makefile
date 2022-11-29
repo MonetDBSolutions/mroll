@@ -30,7 +30,7 @@ farmdown:
 	fi
 
 .PHONY: clean
-clean: 
+clean: farmdown
 	if [[ -d ${DB_FARM} ]];then\
 		rm -r ${DB_FARM};\
 	fi

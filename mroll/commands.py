@@ -45,7 +45,7 @@ def ensure_init():
 
 # ----------------------------------
 
-@click.group(chain=True)
+@click.group()
 @click.pass_context
 def cli(ctx):
     ctx.ensure_object(dict)
@@ -125,13 +125,17 @@ def init():
     
 @cli.command(name='revision')
 @click.option('-m', '--message', help='gets added to revision name')
-def revision(message):
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def revision(message, mdir):
     """
     Creates new revision from a template.
     """
-    ensure_setup()
-    config = Config.from_file(MROLL_CONFIG_FILE)
-    wd = WorkDirectory(config.work_dir)
+    if mdir:
+        wd = WorkDirectory(mdir)
+    else:
+        ensure_setup()
+        config = Config.from_file(MROLL_CONFIG_FILE)
+        wd = WorkDirectory(config.work_dir)
     ts = datetime.now().isoformat()
     id_ = gen_rev_id()
     description = message or ''
@@ -142,25 +146,35 @@ def revision(message):
     print('ok')
 
 @cli.command(name='history')
-def history():
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def history(mdir):
     """
     Shows applied revisions.
     """
-    ensure_init()
-    return applied_revisions()
+    if not mdir:
+        ensure_init()
+    return applied_revisions(mdir=mdir)
     
-def all_revisions(show_patch=False):
-    config = Config.from_file(MROLL_CONFIG_FILE)
-    wd = WorkDirectory(config.work_dir)
+def all_revisions(show_patch=False, mdir=None):
+    if mdir:
+        wd = WorkDirectory(mdir)
+    else:
+        config = Config.from_file(MROLL_CONFIG_FILE)
+        wd = WorkDirectory(config.work_dir)
+
     for rev in wd.revisions:
         if show_patch:
             print(rev.serialize())
         else:
             print(rev)
 
-def applied_revisions(show_patch=False):
-    config = Config.from_file(MROLL_CONFIG_FILE)
-    wd = WorkDirectory(config.work_dir)
+def applied_revisions(show_patch=False, mdir=None):
+    if mdir:
+        wd = WorkDirectory(mdir)
+    else:
+        config = Config.from_file(MROLL_CONFIG_FILE)
+        wd = WorkDirectory(config.work_dir)
+
     migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     if migr_ctx.head is None:
         print('No revisions have being applied yet!')
@@ -169,67 +183,80 @@ def applied_revisions(show_patch=False):
     lookup = {}
     for r in migr_ctx.revisions:
         lookup[r.id] = r
-    working_set: List[Revision] = list(filter(lambda rev: lookup.get(rev.id, None) is not None, wd.revisions))
+
+    working_set: List[Revision] = list(filter(lambda rev: rev.id in lookup, wd.revisions))
     for rev in working_set:
         if show_patch:
             print(rev.serialize())
         else:
             print(rev)
 
-def pending_revisions(show_patch=False):
+def pending_revisions(show_patch=False, mdir=None):
     """
     Shows pending revisions not yet applied.
     """
-    config = Config.from_file(MROLL_CONFIG_FILE)
-    wd = WorkDirectory(config.work_dir)
+    if mdir:
+        wd = WorkDirectory(mdir)
+    else:
+        config = Config.from_file(MROLL_CONFIG_FILE)
+        wd = WorkDirectory(config.work_dir)
     migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     # create lookup
     lookup = {}
     for r in migr_ctx.revisions:
         lookup[r.id] = r
-    working_set: List[Revision] = list(filter(lambda rev: lookup.get(rev.id, None) is None, wd.revisions))
+
+    working_set: List[Revision] = list(filter(lambda rev: rev.id not in lookup, wd.revisions))
     for r in working_set:
         if show_patch:
             print(r.serialize())
         else:
             print(r)
 
-@cli.command(name="show")
-@click.argument('subcmd', nargs=1)
-@click.argument('options', required=False)
-def show(subcmd, options):
-    """
-    Shows revisions information.\n
-    mroll show [ all | pending | applied ] [-p|--patch]
-    """
-    ensure_init()
-    def usage(err_msg: str):
-        res ="Error: {}\n".format(err_msg) if err_msg else ''
-        res += 'Usage:\n'
-        res+='mroll show [pending|applied|all] [-p|--patch]\n'
-        return res
-    show_patch = False
-    if subcmd not in ['all', 'pending', 'applied']:
-        raise SystemExit(usage("Invalid subcommand!"))
-    if options:
-        if options not in ['-p', '--p']:
-            raise SystemExit(usage("Invalid subcommand option!"))
-        show_patch = True 
-    if subcmd == 'pending':
-        return pending_revisions(show_patch=show_patch)
-    if subcmd == 'applied':
-        return applied_revisions(show_patch=show_patch)
-    return all_revisions(show_patch=show_patch)
+@cli.group(name="show")
+def show():
+    pass
+
+@show.command(name="all")
+@click.option('-p', '--patch', is_flag=True)
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def all(patch, mdir):
+    if not mdir:
+        ensure_init()
+
+    return all_revisions(show_patch=patch, mdir=mdir)
+
+@show.command(name="pending")
+@click.option('-p', '--patch', is_flag=True)
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def pending(patch, mdir):
+    if not mdir:
+        ensure_init()
+
+    return pending_revisions(show_patch=patch, mdir=mdir)
+
+@show.command(name="applied")
+@click.option('-p', '--patch', is_flag=True)
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def applied(patch, mdir):
+    if not mdir:
+        ensure_init()
+
+    return applied_revisions(show_patch=patch, mdir=mdir)
 
 @cli.command(name="upgrade")
 @click.option('-n', '--num', 'step', help="run n number of pending revisions")
-def upgrade(step):
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def upgrade(step, mdir):
     """
     Applies revisions in work dir not yet applied.
-    """ 
-    ensure_init()
-    config = Config.from_file(MROLL_CONFIG_FILE)
-    wd = WorkDirectory(config.work_dir)
+    """
+    if mdir:
+        wd = WorkDirectory(mdir)
+    else:
+        ensure_init()
+        config = Config.from_file(MROLL_CONFIG_FILE)
+        wd = WorkDirectory(config.work_dir)
     migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     # create lookup
     lookup = {}
@@ -263,13 +290,17 @@ def upgrade(step):
 @cli.command(name='rollback')
 @click.option('-n', '--num', 'step', default=1, help="rollbacks n number applied revisions")
 @click.option('-r', '--rev', 'rev_id', help="rollbacks to specific revision id inclusive")
-def rollback(step, rev_id):
+@click.option('-d', '--dir', 'mdir', help="the migrations directory")
+def rollback(step, rev_id, mdir):
     """
     Downgrades to previous revision by default. 
     """
-    ensure_init()
-    config = Config.from_file(MROLL_CONFIG_FILE)
-    wd = WorkDirectory(config.work_dir)
+    if mdir:
+        wd = WorkDirectory(mdir)
+    else:
+        ensure_init()
+        config = Config.from_file(MROLL_CONFIG_FILE)
+        wd = WorkDirectory(config.work_dir)
     migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
     if migr_ctx.head is None:
         raise SystemExit('Nothing to do!')
