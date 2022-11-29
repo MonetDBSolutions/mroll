@@ -183,7 +183,8 @@ def applied_revisions(show_patch=False, mdir=None):
     lookup = {}
     for r in migr_ctx.revisions:
         lookup[r.id] = r
-    working_set: List[Revision] = list(filter(lambda rev: lookup.get(rev.id, None) is not None, wd.revisions))
+
+    working_set: List[Revision] = list(filter(lambda rev: rev.id in lookup, wd.revisions))
     for rev in working_set:
         if show_patch:
             print(rev.serialize())
@@ -204,7 +205,8 @@ def pending_revisions(show_patch=False, mdir=None):
     lookup = {}
     for r in migr_ctx.revisions:
         lookup[r.id] = r
-    working_set: List[Revision] = list(filter(lambda rev: lookup.get(rev.id, None) is None, wd.revisions))
+
+    working_set: List[Revision] = list(filter(lambda rev: rev.id not in lookup, wd.revisions))
     for r in working_set:
         if show_patch:
             print(r.serialize())
