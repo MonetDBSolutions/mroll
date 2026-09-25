@@ -18,6 +18,7 @@ from mroll.commands import *
 # not been ran, and when we run it, it fails with the error that the
 # `migrations` directory is not empty.
 
+
 class TestAdHoc(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -38,14 +39,12 @@ class TestAdHoc(unittest.TestCase):
         self.connection.execute("create schema if not exists test")
         self.connection.execute("create table if not exists sys.mroll_revisions(id string primary key, description string, ts timestamp)")
 
-
     def tearDown(self):
         if os.path.exists(self.work_dir):
             shutil.rmtree(self.work_dir)
 
-        self.connection.execute("drop table sys.mroll_revisions;")
+        self.connection.execute("drop table if exists sys.mroll_revisions;")
         self.connection.execute("drop schema test cascade;")
-
 
     def test_revision(self):
         runner = CliRunner()

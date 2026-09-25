@@ -19,9 +19,9 @@ class TestMonetMigrationContext(TestCase):
         self.setup_res = self.run_setup_cmd()
         self.set_config_db_name(self.db_name)
         conn = pymonetdb.connect(self.db_name)
-        conn.execute('create schema if not exists test;')
+        conn.execute('create schema if not exists test')
         conn.commit()
-        
+
     def tearDown(self):
         if os.path.exists(self.work_dir):
             shutil.rmtree(self.work_dir)

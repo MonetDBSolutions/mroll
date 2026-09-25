@@ -1,4 +1,4 @@
-export DB_FARM = $$(pwd)/dbfarm
+export DB_FARM ?= $$(pwd)/dbfarm
 export TEST_DB_NAME ?= mroll_test_db
 export target ?= tests
 
@@ -12,6 +12,7 @@ run_test:
 
 .PHONY: setup
 setup: clean
+	@echo creating ${DB_FARM}
 	monetdbd create ${DB_FARM}
 	monetdbd start ${DB_FARM}
 	monetdb create ${TEST_DB_NAME}
@@ -26,7 +27,9 @@ farmup:
 .PHONY: farmdown
 farmdown: 
 	if [[ -n "$$(pgrep -ax monetdbd)" ]];then\
-		monetdbd stop ${DB_FARM};\
+		if [[ -e "${DB_FARM}/.merovingian_properties" ]];then\
+			monetdbd stop ${DB_FARM};\
+		fi;\
 	fi
 
 .PHONY: clean

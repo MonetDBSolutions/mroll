@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "mroll"
-version = "0.3.4"
-description = "monetdb migration tool"
+version = "0.5.0"
+description = "MonetDB migration tool"
 license = "MPL-2.0"
 readme = "README.md"
 authors = ["svetlin <svetlin.stalinov@monetdbsolutions.com>"]
@@ -20,16 +20,16 @@ classifiers=[
 mroll = "mroll.commands:cli"
 
 [tool.poetry.dependencies]
-python = "^3.7"
-pymonetdb = "^1.3.1"
-click = "^7.1.2"
-sqlparse = "^0.3.1"
+python = "^3.9"
+pymonetdb = "^1.8.0"
+click = "^8.1.7"
+sqlparse = "^0.5.0"
 
-[tool.poetry.dev-dependencies]
-pytest = "^5.2"
-flake8 = "^3.7.9"
-autopep8 = "^1.5.4"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+flake8 = "^7.0.0"
+autopep8 = "^2.1.0"
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

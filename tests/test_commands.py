@@ -25,9 +25,9 @@ class TestCommands(unittest.TestCase):
         self.set_config_db_name(self.db_name)
         self.init_res = self.run_init_cmd()
         conn = pymonetdb.connect(self.db_name)
-        conn.execute('create schema if not exists test;')
+        conn.execute('create schema if not exists test')
         conn.commit()
-        
+
     def tearDown(self):
         if os.path.exists(self.work_dir):
             shutil.rmtree(self.work_dir)
@@ -38,7 +38,7 @@ class TestCommands(unittest.TestCase):
     def drop_all(self):
         conn = pymonetdb.connect(self.db_name)
         try:
-            conn.execute("drop table sys.mroll_revisions;")
+            conn.execute("drop table if exists sys.mroll_revisions")
             conn.execute("drop schema test cascade")
             conn.commit()
         except Exception as e:
@@ -47,11 +47,11 @@ class TestCommands(unittest.TestCase):
             conn.close()
 
     def run_setup_cmd(self):
-        runner = CliRunner() 
+        runner = CliRunner()
         return runner.invoke(setup, ['-p', str(self.work_dir)])
 
     def run_init_cmd(self):
-        runner = CliRunner() 
+        runner = CliRunner()
         return runner.invoke(init)
 
     def add_rev_cmd(self, message):
@@ -124,7 +124,7 @@ class TestCommands(unittest.TestCase):
         res = runner.invoke(show, ['applied'])
         self.assertTrue(res.exit_code==0)
         self.assertNotEqual(res.stdout, '')
-        
+
     def test_upgrade_default_cmd(self):
         #  Test upgrade with no options
         wd = WorkDirectory(self.work_dir)
@@ -169,8 +169,8 @@ class TestCommands(unittest.TestCase):
             wd.add_revision(rev)
         self.assertTrue(len(wd.revisions) == 2)
         runner = CliRunner()
-        res = runner.invoke(upgrade, ['-n', 1])
-        self.assertTrue(res.exit_code==0)
+        res = runner.invoke(upgrade, ['-n', '1'])
+        self.assertTrue(res.exit_code == 0)
         migr_ctx = create_migration_ctx(wd.get_migration_ctx_config())
         self.assertIsNotNone(migr_ctx.head)
         self.assertTrue(len(migr_ctx.revisions) == 1)

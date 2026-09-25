@@ -5,10 +5,8 @@ import os
 import shutil
 import configparser 
 from datetime import datetime
-import importlib.util
-import importlib.machinery
 from mroll.config import *
-from mroll.migration import Revision, MigrationContext, WorkDirectory
+from mroll.migration import Revision, WorkDirectory
 from mroll.exceptions import RevisionOperationError
 from mroll.databases import create_migration_ctx
 
@@ -53,7 +51,12 @@ def cli(ctx):
 @cli.command(name='setup')
 @click.option('-d', '--dir', 'dir_', default='migrations', help='name of the work directory')
 @click.option('-p', '--path', help='path to work directory')
-def setup(dir_, path):
+@click.option('--hostname', default="127.0.0.1", help='Hostname where MonetDB is running')
+@click.option('--port', default=50000, help='MonetDB listening port')
+@click.option('--username', default="monetdb", help='Database username')
+@click.option('--password', default="monetdb", help='Database password')
+@click.option('--db', help='Database name')
+def setup(dir_, path, hostname, port, username, password, db):
     """
     Set up work directory. Should be run once.
     """
@@ -65,6 +68,26 @@ def setup(dir_, path):
     os.mkdir(versions)
     tmpl_dir = get_templates_dir()
     shutil.copy(os.path.join(tmpl_dir, 'mroll.ini'), directory)
+    # setup mroll.ini
+    config = configparser.ConfigParser()
+    ini_file = os.path.join(directory, 'mroll.ini')
+
+    config.read(ini_file)
+
+    config['host'].update({
+        'hostname': str(hostname),
+        'port': str(port)
+    })
+
+    config['db'].update({
+        'username': str(username),
+        'password': str(password),
+        'db_name': str(db)
+    })
+
+    with open(ini_file, 'w') as f:
+        config.write(f)
+
     #  setup config file
     if not os.path.exists(SYS_CONFIG):
         os.mkdir(SYS_CONFIG)
@@ -122,7 +145,8 @@ def init():
         raise SystemExit(e)
     print('{} table created'.format(migr_ctx_config.tbl_name))
     print('Done')
-    
+
+
 @cli.command(name='revision')
 @click.option('-m', '--message', help='gets added to revision name')
 @click.option('-d', '--dir', 'mdir', help="the migrations directory")
@@ -245,7 +269,7 @@ def applied(patch, mdir):
     return applied_revisions(show_patch=patch, mdir=mdir)
 
 @cli.command(name="upgrade")
-@click.option('-n', '--num', 'step', help="run n number of pending revisions")
+@click.option('-n', '--num', 'step', type=int, help="run n number of pending revisions")
 @click.option('-d', '--dir', 'mdir', help="the migrations directory")
 def upgrade(step, mdir):
     """
