@@ -102,6 +102,7 @@ class MigrationCtxConfig:
     def __repr__(self):
         return "<MigrationCtxConfig db_name={} tbl_name={}>".format(self.db_name, self.tbl_name)
 
+
 class MigrationContext(metaclass=ABCMeta):
     """
     Migrations Context Interface

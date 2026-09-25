@@ -69,8 +69,8 @@ def setup(dir_, path, hostname, port, username, password, db):
     tmpl_dir = get_templates_dir()
     shutil.copy(os.path.join(tmpl_dir, 'mroll.ini'), directory)
     # setup mroll.ini
-    config = configparser.ConfigParser()
     ini_file = os.path.join(directory, 'mroll.ini')
+    config = configparser.ConfigParser()
 
     config.read(ini_file)
 
@@ -102,7 +102,12 @@ def setup(dir_, path, hostname, port, username, password, db):
 
 @cli.command(name='config')
 @click.option('-p', '--path', help='path to work directory')
-def config(path):
+@click.option('--hostname', default="127.0.0.1", help='Hostname where MonetDB is running')
+@click.option('--port', default=50000, help='MonetDB listening port')
+@click.option('--username', default="monetdb", help='Database username')
+@click.option('--password', default="monetdb", help='Database password')
+@click.option('--db', help='Database name')
+def config(path, hostname, port, username, password, db):
     """
     Set up mroll configuration under $HOME/.config/mroll
     """
@@ -111,6 +116,25 @@ def config(path):
     check = ('mroll.ini' in dir_list) and ('versions' in dir_list)
     if not check:
         raise SystemExit("Error: specified path '{}' is not a valid mroll working directory!".format(path))
+    # setup mroll.ini
+    ini_file = os.path.join(directory, 'mroll.ini')
+    config = configparser.ConfigParser()
+
+    config.read(ini_file)
+
+    config['host'].update({
+        'hostname': str(hostname),
+        'port': str(port)
+    })
+
+    config['db'].update({
+        'username': str(username),
+        'password': str(password),
+        'db_name': str(db)
+    })
+
+    with open(ini_file, 'w') as f:
+        config.write(f)
     #  setup config file
     if not os.path.exists(SYS_CONFIG):
         os.mkdir(SYS_CONFIG)
@@ -122,6 +146,7 @@ def config(path):
         config.write(configfile)
     assert os.path.exists(MROLL_CONFIG_FILE)
     print('ok')
+
 
 @cli.command(name='init')
 def init():
@@ -136,15 +161,15 @@ def init():
     try:
         # if following succeeds then mroll revisons tbl exist.
         migr_ctx.head
-        return print("Nothing to do! Mroll revisions table already exist.")
-    except:
+        return click.echo("Nothing to do! Mroll revisions table already exist.")
+    except Exception:
         pass
     try:
         migr_ctx.create_revisions_tbl()
     except Exception as e:
         raise SystemExit(e)
-    print('{} table created'.format(migr_ctx_config.tbl_name))
-    print('Done')
+    click.echo('{} table created'.format(migr_ctx_config.tbl_name))
+    click.echo('Done')
 
 
 @cli.command(name='revision')

@@ -12,4 +12,3 @@ def create_migration_ctx(config, database='monetdb') -> MigrationContext:
     """
     if database == 'monetdb':
         return MonetMigrCtx(config)
-        
